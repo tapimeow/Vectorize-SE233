@@ -1,0 +1,19 @@
+.root { -fx-font-family: "Avenir Next", "Helvetica Neue", sans-serif; -fx-font-size: 13px; -fx-background-color: #f5f7fb; }
+.button { -fx-background-color: #e8edf5; -fx-text-fill: #1c2a40; -fx-background-radius: 8; -fx-padding: 9 14; -fx-cursor: hand; }
+.button:hover { -fx-background-color: #dce6f3; }
+.button:disabled { -fx-opacity: 0.45; }
+.button.primary { -fx-background-color: #215ad4; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 13 14; }
+.button.primary:hover { -fx-background-color: #174ab7; }
+.hero-title { -fx-font-size: 37px; -fx-font-weight: bold; -fx-text-fill: #16243c; }
+.drop-heading { -fx-font-size: 18px; -fx-text-fill: #263a5a; -fx-padding: 18 0 0 0; }
+.drop-card { -fx-background-color: white; -fx-background-radius: 20; -fx-border-color: #9fb5da; -fx-border-style: segments(7, 5); -fx-border-width: 2; -fx-border-radius: 20; }
+.muted { -fx-text-fill: #60718b; }
+.toolbar, .footer { -fx-background-color: white; -fx-border-color: #e3e9f2; -fx-border-width: 0 0 1 0; }
+.footer { -fx-border-width: 1 0 0 0; }
+.side-panel { -fx-background-color: white; -fx-border-color: #e3e9f2; -fx-border-width: 0 0 0 1; }
+.section-label { -fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #6a7d99; -fx-padding: 12 0 0 0; }
+.preview-title { -fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #243652; }
+.preview-pane { -fx-background-color: white; -fx-background-radius: 12; -fx-border-color: #dce5f0; -fx-border-radius: 12; }
+.filename { -fx-font-weight: bold; -fx-text-fill: #253b5a; }
+.progress-bar > .bar { -fx-background-color: #4d85e8; -fx-background-radius: 6; }
+.progress-bar > .track { -fx-background-color: #e8edf5; -fx-background-radius: 6; }
