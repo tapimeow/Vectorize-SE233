@@ -1,3 +1,4 @@
+// Team ownership: Day (Backend/Logic). See README.md "Team split".
 package se233.vectorize.service;
 
 import se233.vectorize.adapter.VectorEngine;

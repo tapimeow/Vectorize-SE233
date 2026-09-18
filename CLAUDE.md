@@ -49,6 +49,20 @@ its own `README.md` for how to run it as a behavioral oracle) unless the
 user explicitly asks for that copy in this exact session. Its existence is
 not standing authorization.
 
+## Whose file is this
+
+The two teammates split ownership by skill, not by even file count: **Mona —
+Frontend/View**, **Day — Backend/Logic**. Every owned file has a
+`// Team ownership: ...` comment on its first line; `README.md` §7 "Team
+split" has the full table and the reasoning. If asked to write in a file
+owned by the *other* teammate, say so before proceeding (e.g. "this file is
+Day's per README §7 — confirm you want it touched from this side, or ask
+Day to do it") rather than silently implementing it — the point is to stop
+one AI session from stepping on the other teammate's in-progress work
+without either human noticing. `module-info.java`, `ConversionException`,
+`FxTestSupport`, and `JUnitTestSuite` are marked Shared — either teammate
+may touch those without the same check.
+
 ## The coursebook's own AI policy (read this before "just implement it")
 
 The coursebook has a dedicated "AI Advisory" box in every one of chapters

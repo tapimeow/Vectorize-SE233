@@ -1,3 +1,4 @@
+// Team ownership: Shared - both review changes here. See README.md "Team split".
 package se233.vectorize.exception;
 
 public class ConversionException extends Exception {

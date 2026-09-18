@@ -1,3 +1,4 @@
+// Team ownership: Mona (Frontend/View). See README.md "Team split".
 package se233.vectorize.view;
 
 import javafx.geometry.Insets;

@@ -131,3 +131,42 @@ assume earlier contracts are real, not stubs.
 - Don't copy from `../complete-reference/` (a protected, previously completed reference build) unless the user explicitly asks you to.
 - Don't implement Chapter 6 (build/dependency management) concerns — the `pom.xml` is already correct for this assignment.
 - Don't treat a green `./mvnw -DskipTests package` as progress — it only proves the skeleton still compiles, not that any TODO is implemented.
+
+## 7. Team split
+
+Two-person split, by actual strength rather than by even file count: **Mona —
+Frontend/View** (JavaFX layout, controls, event wiring); **Day —
+Backend/Logic** (domain model, services, the vectorization pipeline,
+concurrency). Every file that has an owner carries a one-line
+`// Team ownership: ...` comment at the top saying so — that comment is the
+source of truth if this table ever drifts from the code. A few files are
+**Shared**: either of you can touch them, but say so to the other first,
+since both sides depend on them.
+
+| Owner | Files | Phases | Tests |
+| --- | --- | --- | --- |
+| **Mona** (Frontend/View) | `Launcher`, `VectorizeApplication`, `view/VectorizeView`, `controller/VectorizeController`, `service/PresetService` | 2 (screen layout), 3 (wiring import), 5 (zoom/nav/detail/color/remove-bg controls, live-preview reaction), 9 (Save/Load preset — full vertical slice: UI *and* its persistence logic) | `UiFlowTest`, `UiSnapshotTest` |
+| **Day** (Backend/Logic) | `model/*` (6 files), `service/ImageImportService`, `service/ZipImportService`, `service/ColorAnalysisService`, `service/BackgroundRemovalService`, `service/RasterPreprocessor`, `service/VectorizationService`, `service/SvgValidationService`, `service/ExportService`, `adapter/VectorEngine`, `adapter/AutoTraceVectorEngine`, `concurrency/ProcessingCoordinator`, `concurrency/ProcessingPolicy` | 2 (domain model), 3 (import/ZIP), 4 (color/background/vectorization/SVG gate), 6 (concurrency — the hardest phase, per `CLAUDE.md`), 7 (export) | `ProcessingPolicyTest`, `ImportAndZipTest`, `VectorPipelineTest`, `BatchFailureTest`, `ExportIntegrationTest`, `ExportAndPresetTest`, `ParallelExportTest` |
+| **Shared** | `module-info.java`, `exception/ConversionException`, `FxTestSupport`, `JUnitTestSuite` | — | — |
+
+Why it looks lopsided by file count: this assignment's rubric weight is
+itself backend-heavy (import/ZIP safety, the color/vectorization pipeline,
+graded concurrency, export are most of the mandatory-behavior rows in
+`docs/REQUIREMENTS.md`), so Day's side naturally has more files. Mona's side
+isn't smaller in effort — Phase 2's two-screen flexible layout and Phase 5's
+full event-wiring (every button/combo/spinner in `VectorizeView` driving
+state through `VectorizeController`) is real Chapter 1 work, and Phase 9
+gives her one complete feature end-to-end (UI down to disk) rather than a
+slice of someone else's. If it still feels unbalanced once you're both
+mid-phase, rebalance by talking about it — move a specific file's ownership
+comment and this table together, don't just start editing someone else's
+file.
+
+**The one seam you both touch:** `VectorizeController` calls into
+`ProcessingCoordinator`/the services — that's where Mona's UI meets Day's
+backend. Treat the method signatures there as a contract; if one of you
+needs to change one, tell the other before doing it, and both review that
+diff. Same idea as `AGENTS.md`'s "review each other's work, integrate small
+slices" — this table just says concretely who is on which side of each
+contract, matching how you two actually work rather than the old
+service-group split.
