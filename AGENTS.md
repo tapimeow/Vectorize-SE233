@@ -24,10 +24,10 @@ JavaFX Application Thread: chooser, controls, scene graph, WebView, result/statu
 ## Phases and authorization
 
 1. Requirements/architecture — documented.
-2. Foundation/domain — build scaffold and basic data declarations exist; detail policy TODO.
+2. Foundation/domain/view layout — build scaffold and basic data declarations exist; `VectorizeView`'s drop/editor screen layout (coursebook §1.1–§1.4 Event Driven Development) and detail policy are TODO.
 3. Import/ZIP — TODO.
 4. Color/background/vectorization/SVG gate — TODO.
-5. Editor handlers/navigation/zoom/live preview — layout exists; behavior TODO.
+5. Editor handlers/navigation/zoom/live preview — behavior TODO, once Phase 2's layout exists.
 6. Graded batch concurrency/progress/cancellation — TODO.
 7. Export All/final SVG writes — TODO.
 8. Automated/manual rubric verification and packaging — existing tests serve as acceptance targets; TODO.

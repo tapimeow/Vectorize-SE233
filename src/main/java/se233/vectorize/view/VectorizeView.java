@@ -56,80 +56,68 @@ public final class VectorizeView {
     private boolean svgLoading;
     private int svgWidth = 640, svgHeight = 480;
 
+    /**
+     * Assemble both screens and show the primary stage.
+     * TODO Phase 2, coursebook §1.1.1 JavaFX (Stage/Scene) and §1.4.2 View
+     * components: store {@code stage}, call {@link #buildDrop()} then
+     * {@link #buildEditor()} to populate {@code dropRoot}/{@code editorRoot},
+     * harden {@code vector} (disable JavaScript via
+     * {@code vector.getEngine().setJavaScriptEnabled(false)}, disable the
+     * context menu, set a transparent page fill) before any SVG is ever loaded
+     * into it, then build one {@link Scene} over {@code dropRoot} at a sensible
+     * starting size, attach {@code /se233/vectorize/app.css}, set the stage
+     * title, and show it. The app always starts on the drop screen;
+     * {@link #showEditor()}/{@link #showDrop()} later swap the Scene's root.
+     * Test that the window actually appears and that WebView never executes
+     * script from untrusted SVG content.
+     */
     public VectorizeView(Stage stage) {
-        this.stage = stage;
-        buildDrop(); buildEditor();
-        vector.getEngine().setJavaScriptEnabled(false);
-        // TODO Phase 5: after asynchronous SVG load, safely recompute fit zoom
-        // if the user still selected Zoom to Fit. Do not apply an obsolete SVG.
-        vector.setContextMenuEnabled(false);
-        vector.setPageFill(javafx.scene.paint.Color.TRANSPARENT);
-        Scene scene = new Scene(dropRoot, 1180, 740);
-        scene.getStylesheets().add(getClass().getResource("/se233/vectorize/app.css").toExternalForm());
-        stage.setTitle("Raster to Vector • SE233"); stage.setScene(scene); stage.show();
+        throw new UnsupportedOperationException("TODO Phase 2: assemble screens and show the stage");
     }
 
+    /**
+     * Lay out the drop screen: a centered card with title, subtitle,
+     * instructions, the {@link #chooseFiles} button and {@link #dropStatus}.
+     * TODO Phase 2, coursebook §1.4.2 View components / §1.4.4 Flexible-size
+     * container: build the card with a {@link VBox}, center it in
+     * {@code dropRoot} with a {@link StackPane}, and add a footer label. Prefer
+     * the existing style classes in {@code app.css} (e.g. {@code hero-title},
+     * {@code drop-card}, {@code drop-heading}, {@code muted}) over inline
+     * styling. This method only arranges controls; it must not attach drag/drop
+     * handlers — that belongs in {@link #onDrop(Consumer)}.
+     */
     private void buildDrop() {
-        Label title = new Label("Raster → Vector"); title.getStyleClass().add("hero-title");
-        Label subtitle = new Label("Turn JPG and PNG images into real, scalable SVG paths.");
-        subtitle.getStyleClass().add("muted");
-        Label instruction = new Label("Drop images or one ZIP archive here"); instruction.getStyleClass().add("drop-heading");
-        VBox card = new VBox(18, title, subtitle, instruction, chooseFiles, dropStatus);
-        card.setAlignment(Pos.CENTER); card.setPadding(new Insets(60)); card.getStyleClass().add("drop-card");
-        StackPane center = new StackPane(card); center.setPadding(new Insets(45));
-        dropRoot.setCenter(center);
-        dropRoot.setBottom(new Label("SE233 • Advanced Programming • JPG / PNG → SVG"));
-        BorderPane.setMargin(dropRoot.getBottom(), new Insets(12, 24, 18, 24));
+        throw new UnsupportedOperationException("TODO Phase 2: drop screen layout");
     }
 
+    /**
+     * Lay out the editor screen: a top toolbar with only the three zoom
+     * buttons, a center row with the original/vector preview panes side by
+     * side, a right settings panel, and a bottom status footer.
+     * TODO Phase 2, coursebook §1.4.2 View components / §1.4.4 Flexible-size
+     * container: build {@code editorRoot} with a {@link BorderPane} —
+     * {@code setTop} for {@link #zoomIn}/{@link #zoomOut}/{@link #zoomFit} only
+     * (FR-005 forbids adding more top controls); {@code setCenter} for
+     * {@code originalPane}/{@code vectorPane} in an {@link HBox} that grows
+     * with the window ({@link Priority#ALWAYS} on both sides, so resizing keeps
+     * them equal); {@code setRight} for {@link #detail}, {@link #colorMode},
+     * {@link #customColors}, {@link #detectedPalette}, {@link #removeBackground},
+     * {@link #back}/{@link #next}, {@link #exportAll}, and
+     * {@link #savePreset}/{@link #loadPreset}; {@code setBottom} for
+     * {@link #filename}, {@link #fileStatus}, {@link #fileProgress},
+     * {@link #batchStatus}, {@link #cancelProcessing}, {@link #batchProgress}
+     * and {@link #operationMessage}. Bind {@code original}'s fit width/height to
+     * its pane (minus padding) so it resizes responsively, and add
+     * {@code checker} behind {@code vector} in {@code vectorPane} (its drawing
+     * is {@link #drawChecker()}, a separate Phase 5 TODO). The small
+     * {@link #previewColumn}/{@link #section}/{@link #spacer} helpers below are
+     * provided to keep this method's structure readable — use them rather than
+     * duplicating their layout. Attach no event handlers or bindings that
+     * belong to Phase 5 (live preview, zoom math); this method only arranges
+     * controls into panes.
+     */
     private void buildEditor() {
-        HBox toolbar = new HBox(10, zoomIn, zoomOut, zoomFit);
-        toolbar.setAlignment(Pos.CENTER_LEFT); toolbar.setPadding(new Insets(15, 22, 15, 22));
-        toolbar.getStyleClass().add("toolbar"); editorRoot.setTop(toolbar);
-
-        original.setPreserveRatio(true); original.setSmooth(true);
-        original.fitWidthProperty().bind(originalPane.widthProperty().subtract(28));
-        original.fitHeightProperty().bind(originalPane.heightProperty().subtract(28));
-        originalPane.getChildren().add(original); originalPane.getStyleClass().add("preview-pane");
-        checker.setManaged(false); checker.setMouseTransparent(true);
-        vectorPane.getChildren().addAll(checker, vector); vectorPane.getStyleClass().add("preview-pane");
-        // TODO Phase 5: on pane resize redraw transparency checker and, only
-        // while fit mode is selected, recompute Zoom to Fit on the FX thread.
-        vector.setMinWidth(0); vector.setMinHeight(0);
-        vector.setMaxWidth(Double.MAX_VALUE); vector.setMaxHeight(Double.MAX_VALUE);
-        VBox left = previewColumn("Original Image", originalPane);
-        VBox right = previewColumn("Vectorized Result", vectorPane);
-        HBox previews = new HBox(16, left, right); previews.setPadding(new Insets(18));
-        left.setMinWidth(0); right.setMinWidth(0);
-        left.setPrefWidth(1); right.setPrefWidth(1);
-        HBox.setHgrow(left, Priority.ALWAYS); HBox.setHgrow(right, Priority.ALWAYS);
-        editorRoot.setCenter(previews);
-
-        detail.getItems().setAll(DetailLevel.values()); colorMode.getItems().setAll(ColorMode.values());
-        detail.setMaxWidth(Double.MAX_VALUE); colorMode.setMaxWidth(Double.MAX_VALUE);
-        customColors.setEditable(false); customColors.setMaxWidth(Double.MAX_VALUE);
-        HBox navigation = new HBox(8, back, next); HBox.setHgrow(back, Priority.ALWAYS); HBox.setHgrow(next, Priority.ALWAYS);
-        back.setMaxWidth(Double.MAX_VALUE); next.setMaxWidth(Double.MAX_VALUE);
-        exportAll.getStyleClass().add("primary"); exportAll.setMaxWidth(Double.MAX_VALUE);
-        HBox presets = new HBox(8, savePreset, loadPreset);
-        savePreset.setMaxWidth(Double.MAX_VALUE); loadPreset.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(savePreset, Priority.ALWAYS); HBox.setHgrow(loadPreset, Priority.ALWAYS);
-        VBox panel = new VBox(10, section("DETAIL LEVEL"), detail, section("COLORS"), colorMode,
-                new Label("Custom palette size (2–5)"), customColors, section("DETECTED PALETTE"), detectedPalette,
-                removeBackground, spacer(), section("IMAGES"), navigation, exportAll,
-                section("EXTRA FEATURE · PRESETS"), presets);
-        panel.setPadding(new Insets(22)); panel.setPrefWidth(260); panel.getStyleClass().add("side-panel");
-        editorRoot.setRight(panel);
-
-        filename.getStyleClass().add("filename"); fileStatus.getStyleClass().add("muted");
-        batchStatus.getStyleClass().add("muted");
-        operationMessage.getStyleClass().add("muted"); operationMessage.setWrapText(true);
-        fileProgress.setMaxWidth(Double.MAX_VALUE); batchProgress.setMaxWidth(Double.MAX_VALUE);
-        HBox batchLine = new HBox(12, batchStatus, spacer(), cancelProcessing);
-        batchLine.setAlignment(Pos.CENTER_LEFT);
-        VBox footer = new VBox(5, filename, fileStatus, fileProgress, batchLine, batchProgress, operationMessage);
-        footer.setPadding(new Insets(12, 24, 12, 24)); footer.getStyleClass().add("footer");
-        editorRoot.setBottom(footer);
+        throw new UnsupportedOperationException("TODO Phase 2: editor screen layout");
     }
 
     private static VBox previewColumn(String heading, StackPane pane) {
