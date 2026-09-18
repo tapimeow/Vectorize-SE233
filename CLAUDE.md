@@ -63,6 +63,15 @@ without either human noticing. `module-info.java`, `ConversionException`,
 `FxTestSupport`, and `JUnitTestSuite` are marked Shared — either teammate
 may touch those without the same check.
 
+Mona additionally keeps a personal, uncommitted rules file,
+`mona-ai-working-rules.md`, one directory above this repo (in `Project/`,
+not inside `se233-vectorize/`, so it isn't shared with Day or tracked by
+git). It narrows the rules above further for her own sessions: guide/review
+only inside her own owned files by default, no direct edits without her
+explicit per-change ask, and Day's files stay fully off-limits. If Day ever
+wants an equivalent personal file, that's a separate, symmetric setup on
+Day's side — this repo's shared policy above is unaffected either way.
+
 ## The coursebook's own AI policy (read this before "just implement it")
 
 The coursebook has a dedicated "AI Advisory" box in every one of chapters
