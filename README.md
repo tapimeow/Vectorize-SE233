@@ -123,6 +123,7 @@ assume earlier contracts are real, not stubs.
 - Tests use plain **JUnit 5** (`junit-jupiter-api`/`junit-jupiter-engine`), matching §5.2.3 of the coursebook. There is no Mockito dependency in `pom.xml`; where the tests need a fake collaborator (see `UiFlowTest`'s fake `VectorEngine`), they hand-write a lambda implementing the one-method `VectorEngine` interface instead of a mocking framework — cheaper than Mockito here because the interface is tiny. If you find a spot where a real mock genuinely pays for itself, the coursebook's Mockito walkthrough (§5.2.3, "Mocking") and `pom.xml` snippet are the reference — add the dependency deliberately, not by default.
 - `FxTestSupport` is the shared JavaFX-toolkit-startup helper the tests use, equivalent to the `initJfxRuntime()` pattern from the coursebook's `GameLoopTest`.
 - Run one test class at a time while you work a phase: `./mvnw test -Dtest=ProcessingPolicyTest`.
+- `JUnitTestSuite` (coursebook §5.5.5) runs all 9 test classes in one shot — `./mvnw test -Dtest=JUnitTestSuite`, or right-click → Run in IntelliJ. It's not picked up by a plain `./mvnw test` (that already runs every `*Test` class individually); the suite is a convenience for a single "run everything" click, not a replacement.
 
 ## 6. What not to do
 
