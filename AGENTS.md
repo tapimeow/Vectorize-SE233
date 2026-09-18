@@ -2,7 +2,7 @@
 
 ## Purpose and source hierarchy
 
-This is the intentionally incomplete teaching/assignment version for two Advanced Programming students. Implement a JPG/PNG/ZIP → genuine vector SVG desktop app guided by the rubric, not a production editor. Read `docs/REQUIREMENTS.md`, then `docs/ARCHITECTURE.md`, then this file before changing contracts. Lecturer clarification outranks all three; update docs before coding against it.
+This is the intentionally incomplete teaching/assignment version for two Advanced Programming students. Implement a JPG/PNG/ZIP → genuine vector SVG desktop app guided by the rubric, not a production editor. Read [`docs/term-project-brief.pdf`](docs/term-project-brief.pdf) (the official Chiang Mai University SE233 Term Project I assignment/scoring PDF), then `docs/REQUIREMENTS.md`, then `docs/ARCHITECTURE.md`, then this file before changing contracts. The PDF and live lecturer clarification outrank all three normalized docs; update the docs, not just your local understanding, before coding against new clarification.
 
 The sibling `../complete-reference/` is a **protected, fully implemented preservation/reference version**. Do not modify it during student work. **Future Codex sessions must NOT copy implementation, algorithms, handlers, tests-as-solutions, or CLI command code from complete-reference into student unless the user explicitly requests that copying.** Its existence is not authorization to finish TODOs. Develop and test the student version independently. The original `lab/uploader` and its parent Git history are also preserved.
 

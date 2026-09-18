@@ -11,9 +11,11 @@ app until you implement the TODOs.**
 
 Read the docs in this order before writing any code:
 
-1. [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) — the graded rubric, as functional/non-functional requirement IDs (FR-xxx/NFR-xxx).
-2. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — the target design, package responsibilities, and per-area implementation TODOs.
-3. [`AGENTS.md`](AGENTS.md) — working rules, the 9 implementation phases, and what's off-limits (no DI frameworks, no copying from `../complete-reference/`).
+1. [`docs/term-project-brief.pdf`](docs/term-project-brief.pdf) — the official CMU SE233 assignment and scoring rubric; the source of truth.
+2. [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) — that brief normalized into functional/non-functional requirement IDs (FR-xxx/NFR-xxx).
+3. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — the target design, package responsibilities, and per-area implementation TODOs.
+4. [`AGENTS.md`](AGENTS.md) — working rules, the 9 implementation phases, and what's off-limits (no DI frameworks, no copying from `../complete-reference/`).
+5. [`CLAUDE.md`](CLAUDE.md) — if you're working with Claude: this loads automatically every session and is what keeps both teammates' AI sessions behaving consistently.
 
 This README is the map between **what the course taught you** and **where in
 this codebase you apply it**. It does not restate the rubric or the
