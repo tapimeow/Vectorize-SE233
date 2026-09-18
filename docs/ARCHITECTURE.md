@@ -41,7 +41,6 @@ src/main/java/se233/vectorize/
   adapter/      VectorEngine, AutoTraceVectorEngine
   concurrency/  ProcessingCoordinator, ProcessingPolicy
   exception/    ConversionException (typed category/cause)
-src/main/resources/se233/vectorize/app.css
 src/test/java/se233/vectorize/...  (behavioral and integration tests)
 ```
 
@@ -195,6 +194,7 @@ Pair division: Student A owns import/ZIP safety, domain/settings, color/backgrou
 | D-07 | Validate and preview the same SVG later exported | Prevent raster-wrapped/invalid success and mismatched preview | Trust CLI output | XML/render check costs extra work | Vector format and preview/export |
 | D-08 | Edge-connected background candidate before palette reduction | Avoid treating edge foreground of same color as background | Remove dominant palette color globally | Complex photo backgrounds remain hard | Transparent-background point |
 | D-09 | Unique export names and partial-success report | Prevent collisions and lost successful work | Silent overwrite or whole-batch abort | Naming/retry semantics should be confirmed | Openable export and UX |
+| D-10 | No external stylesheet; style nodes inline with `.setStyle(...)` only where needed | Matches the coursebook's own Ch.1 case study (Scripts 1.22–1.24), which has no `.css` file; lecture taught SceneBuilder (FXML), not hand-authored CSS, so a standalone stylesheet is scope the pair was never taught either way | A hand-authored `app.css` (previously present, removed) | Editor screen will look plainer than a styled mockup | UX and UI (subjective) |
 
 ## 15. Open technical questions and implementation order
 

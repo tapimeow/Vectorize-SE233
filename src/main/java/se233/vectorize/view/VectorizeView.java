@@ -65,8 +65,11 @@ public final class VectorizeView {
      * {@code vector.getEngine().setJavaScriptEnabled(false)}, disable the
      * context menu, set a transparent page fill) before any SVG is ever loaded
      * into it, then build one {@link Scene} over {@code dropRoot} at a sensible
-     * starting size, attach {@code /se233/vectorize/app.css}, set the stage
-     * title, and show it. The app always starts on the drop screen;
+     * starting size, set the stage title, and show it. There is no stylesheet
+     * to attach — match the coursebook's own case study (Scripts 1.22–1.24),
+     * which styles nodes with plain {@code pane.setStyle("-fx-background-
+     * color: ...")} calls where a look actually needs to be set, not an
+     * external {@code .css} file. The app always starts on the drop screen;
      * {@link #showEditor()}/{@link #showDrop()} later swap the Scene's root.
      * Test that the window actually appears and that WebView never executes
      * script from untrusted SVG content.
@@ -80,11 +83,12 @@ public final class VectorizeView {
      * instructions, the {@link #chooseFiles} button and {@link #dropStatus}.
      * TODO Phase 2, coursebook §1.4.2 View components / §1.4.4 Flexible-size
      * container: build the card with a {@link VBox}, center it in
-     * {@code dropRoot} with a {@link StackPane}, and add a footer label. Prefer
-     * the existing style classes in {@code app.css} (e.g. {@code hero-title},
-     * {@code drop-card}, {@code drop-heading}, {@code muted}) over inline
-     * styling. This method only arranges controls; it must not attach drag/drop
-     * handlers — that belongs in {@link #onDrop(Consumer)}.
+     * {@code dropRoot} with a {@link StackPane}, and add a footer label. Use
+     * plain controls and, only where it genuinely helps readability, an inline
+     * {@code .setStyle("-fx-...")} call — the same technique
+     * {@code InventoryPane}/{@code EquipPane}/{@code CharacterPane} use in the
+     * coursebook case study. This method only arranges controls; it must not
+     * attach drag/drop handlers — that belongs in {@link #onDrop(Consumer)}.
      */
     private void buildDrop() {
         throw new UnsupportedOperationException("TODO Phase 2: drop screen layout");
