@@ -36,7 +36,7 @@ Status: Student implementation specification; the adjacent `complete-reference/`
 | NFR-001 | MUST | JavaFX Application Thread stays responsive; all decoding, ZIP extraction, color analysis, tracing, SVG validation, and writes run off it. Scene graph/control changes run on it. |
 | NFR-002 | MUST | Bound worker count, publish overall/per-image progress and outcome, isolate individual failures, and release workers/tool processes on cancellation or shutdown. |
 | NFR-003 | MUST | Handle unsupported input, corrupt JPG/PNG/ZIP, empty ZIP, Zip Slip/unsafe entries, absent/failing CLI, invalid SVG, inaccessible output, write errors, and partial batch failures. Display concise user messages rather than raw stack traces; preserve causes for diagnostics. |
-| NFR-004 | MUST | ZIP ingestion rejects traversal paths and controls extracted-entry count, size, and total size to avoid uncontrolled resource use; proposed limits are recorded in `ARCHITECTURE.md` and may be revised for grading machines. |
+| NFR-004 | MUST | ZIP ingestion rejects traversal paths (Zip Slip: absolute, drive-prefixed, `..`, or otherwise escaping entry names) so extraction cannot write outside the intended folder. |
 | NFR-005 | MUST | SVG output is parseable, has a valid SVG root/namespace and vector content, and is checked before preview/export. Do not trust a CLI exit code alone. |
 | NFR-006 | SHOULD | Modular, maintainable, and testable separation of JavaFX presentation, state, file/ZIP I/O, image processing, concurrency, and external integration; abstractions earn their place. |
 | NFR-007 | SHOULD | UI clearly distinguishes queued/running/ready/failed/cancelled, current preview freshness, and partial export success. |
@@ -101,7 +101,7 @@ Status: Student implementation specification; the adjacent `complete-reference/`
 1. Is a mixed image+ZIP drop accepted, or must ZIP be the only dropped item? The brief explicitly lists one ZIP but not mixtures.
 2. Should settings apply globally to all images or per image? The design adopts per-image copies of shared defaults; confirm if lecturers expect one global batch configuration.
 3. How should the parallel predicate apply after users create **mixed per-image** configurations? The graded default batch is unambiguous; see D-03 and its conservative rule.
-4. Are the selected 25-megapixel, 500-entry, 40-MB-entry, and 200-MB-total ZIP limits acceptable for demonstration, and which target platforms must run the tool?
+4. Which target platforms must run the tool? (A prior draft proposed fixed numeric ZIP/decode resource caps; dropped as scope neither the coursebook nor the brief asks for — see D-11 in `ARCHITECTURE.md`. Revisit only if a real crash/hang on the grading machine shows it's needed.)
 5. What counts as acceptable Unlimited color fidelity, especially for photographs, and what vector visual quality is expected? A tracing engine inevitably approximates the source.
 6. How should background be identified for photographs or multicolored/transparent edges? Is an edge-connected dominant-color heuristic acceptable, or is manual selection expected (the latter risks “Hand-pick Settings”)?
 7. Does “instant” have a numerical response-time threshold, or is immediate asynchronous refresh with progress sufficient?

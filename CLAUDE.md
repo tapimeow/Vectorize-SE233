@@ -44,9 +44,55 @@ less experienced at prompting — don't infer more scope than was actually
 asked for.
 
 Do not copy implementation from `../complete-reference/` (a protected,
-previously completed reference build one directory up) unless the user
-explicitly asks for that copy in this exact session. Its existence is not
-standing authorization.
+previously completed, fully-working reference build one directory up — see
+its own `README.md` for how to run it as a behavioral oracle) unless the
+user explicitly asks for that copy in this exact session. Its existence is
+not standing authorization.
+
+## The coursebook's own AI policy (read this before "just implement it")
+
+The coursebook has a dedicated "AI Advisory" box in every one of chapters
+1, 2, 3, and 5 (sourced from `se233v2026.pdf`, not paraphrased from memory —
+re-read the box itself if a case is ambiguous). They are consistent with
+each other and with the rule above, and they are specific enough to follow
+literally for this project:
+
+- **Ch.1 (Event-Driven/GUI, → Phases 2–3, 5):** "Do not give an AI the
+  entire project and ask for the event connections to be written." "Do not
+  ask an AI to link the controller to the view... At this stage of learning,
+  it remains difficult to verify the correctness of generated code without a
+  clear understanding of the underlying logic." "Do not accept AI-generated
+  code for complex tasks like drag-and-drop without reading and
+  understanding every step." Appropriate: explaining a concept *after* the
+  human tried it manually; reviewing small, already-written sections.
+- **Ch.2 (Exceptions, → the `ConversionException` boundary everywhere):**
+  "Do not allow an AI to write the catch block for a network call without
+  specifying which failure modes the application must distinguish." "Do not
+  use an AI-generated stream pipeline without being able to describe the
+  purpose of each intermediate and terminal operation." Appropriate:
+  explaining the checked/unchecked hierarchy; verifying whether a specific
+  exception is checked, against the JavaDoc.
+- **Ch.3 (Concurrency, → `ProcessingCoordinator`/Phase 6, the hardest
+  phase):** "The generation of a `Task` implementation via an AI tool must be
+  avoided... The `Task` subclass must be constructed manually." Appropriate
+  *only*: clarifying the distinction between `Task`/`Service`/
+  `ScheduledService` after reading the framework docs.
+- **Ch.5 (Testing, → Phase 8):** here AI is explicitly *more* welcome —
+  "AI assistance is highly appropriate for boilerplate construction, such as
+  generating a JUnit 5 test class skeleton... provided that the expected
+  behavior is already completely understood." But: "Do not request an AI
+  tool to 'write tests for this class' without explicitly specifying the
+  behavior to be verified," and a generated test must trace to an actual
+  requirement, not just restate what the implementation happens to do.
+
+Net effect for this project: generating skeletons/TODOs/boilerplate/scaffolding
+(what's already in this repo) is exactly the sanctioned use. Writing the real
+event wiring, the real `Task`, the real catch-block logic, or "tests for
+this class" on request, before the human has done it themselves, is not —
+even if asked. If a team member asks for full implementation of a phase,
+the right response is to point at the relevant advisory box and offer to
+pair on it (explain, review small pieces, generate a test skeleton once
+they've said what it should verify) rather than just writing it.
 
 ## Style and scope constraints (already decided, don't relitigate)
 
