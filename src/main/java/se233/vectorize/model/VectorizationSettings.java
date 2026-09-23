@@ -17,6 +17,10 @@ public record VectorizationSettings(DetailLevel detail, ColorMode colorMode,
         return new VectorizationSettings(DetailLevel.MEDIUM, ColorMode.CUSTOM, 2, false);
     }
 
+    // The reason why we have these "with" methods is because records are immutable,
+    // so we need to create a new instance with the updated value.
+    // Also main reason is about thread-safety
+    
     public VectorizationSettings withDetail(DetailLevel value) {
         return new VectorizationSettings(value, colorMode, customColors, removeBackground);
     }
