@@ -21,6 +21,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import se233.vectorize.model.ColorMode;
@@ -57,6 +58,18 @@ public final class VectorizeView {
     private boolean svgLoading;
     private int svgWidth = 640, svgHeight = 480;
 
+    // Design tokens from DESIGN.md
+    private static final String BG          = "-fx-background-color: #FAFAF9;";
+    private static final String SURFACE     = "-fx-background-color: #FFFFFF; -fx-background-radius: 12;"
+            + " -fx-border-color: #E7E5E4; -fx-border-radius: 12;";
+    private static final String PRIMARY_BTN = "-fx-background-color: #4338CA; -fx-text-fill: white;"
+            + " -fx-background-radius: 8; -fx-padding: 8 16;";
+    private static final String TOOL_BTN    = "-fx-background-color: #0F766E; -fx-text-fill: white;"
+            + " -fx-background-radius: 8;";
+    private static final String WARN_BTN    = "-fx-background-color: #D97706; -fx-text-fill: white;"
+            + " -fx-background-radius: 8;";
+    private static final String TITLE_FONT  = "-fx-font-family: 'Georgia'; -fx-font-size: 26; -fx-font-weight: bold;";
+
     /**
      * Assemble both screens and show the primary stage.
      * TODO Phase 2, coursebook §1.1.1 JavaFX (Stage/Scene) and §1.4.2 View
@@ -76,7 +89,21 @@ public final class VectorizeView {
      * script from untrusted SVG content.
      */
     public VectorizeView(Stage stage) {
-        throw new UnsupportedOperationException("TODO Phase 2: assemble screens and show the stage");
+        this.stage = stage;
+        // 1. build the two screens
+        buildDrop();
+        buildEditor();
+        // 2. make the WebView safe BEFORE any SVG goes in
+        vector.getEngine().setJavaScriptEnabled(false);
+        vector.setContextMenuEnabled(false);
+        vector.setPageFill(Color.TRANSPARENT);
+        // 3. one Scene, starting on the drop screen
+        Scene scene = new Scene(dropRoot, 1100, 720);
+        stage.setTitle("Vectorize");
+        stage.setMinWidth(800);
+        stage.setMinHeight(550);
+        stage.setScene(scene);
+        stage.show();
     }
 
     /**
@@ -92,7 +119,33 @@ public final class VectorizeView {
      * attach drag/drop handlers — that belongs in {@link #onDrop(Consumer)}.
      */
     private void buildDrop() {
-        throw new UnsupportedOperationException("TODO Phase 2: drop screen layout");
+        // 1. create 3 new Labels: title, subtitle, instructions
+        Label title = new Label("Vectorize");
+        title.setStyle(TITLE_FONT);
+        Label subtitle = new Label("Turn raster images into clean vectors");
+        subtitle.setStyle("-fx-text-fill: #57534E;");
+        Label instructions = new Label("Drag and drop your images here");
+        chooseFiles.setStyle(PRIMARY_BTN);
+
+        // 2. put the 5 things in a VBox card, with spacing
+        VBox card = new VBox(15, title, subtitle, instructions, chooseFiles, dropStatus);
+        card.setAlignment(Pos.CENTER);
+        card.setPadding(new Insets(40));
+        card.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+        card.setStyle(SURFACE);
+
+        // 3. center the card
+        StackPane center = new StackPane(card);
+
+        // 4. footer
+        Label footer = new Label("Supports PNG, JPG, and ZIP archive");
+        BorderPane.setAlignment(footer, Pos.CENTER);
+        BorderPane.setMargin(footer, new Insets(0, 0, 16, 0));
+
+        // 5. put them in dropRoot (a BorderPane): which two areas?
+        dropRoot.setCenter(center);
+        dropRoot.setBottom(footer);
+        dropRoot.setStyle(BG);
     }
 
     /**
