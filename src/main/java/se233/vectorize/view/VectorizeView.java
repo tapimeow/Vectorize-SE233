@@ -67,8 +67,10 @@ public final class VectorizeView {
     private static final String TOOL_BTN    = "-fx-background-color: #0F766E; -fx-text-fill: white;"
             + " -fx-background-radius: 8;";
     private static final String WARN_BTN    = "-fx-background-color: #D97706; -fx-text-fill: white;"
-            + " -fx-background-radius: 8;";
+            + " -fx-background-radius: 8; -fx-padding: 4 12;";
     private static final String TITLE_FONT  = "-fx-font-family: 'Georgia'; -fx-font-size: 26; -fx-font-weight: bold;";
+    private static final String PROGRESS    = "-fx-accent: #4338CA; -fx-control-inner-background: #F5F5F4;"
+            + " -fx-text-box-border: #E7E5E4; -fx-shadow-highlight-color: transparent;";
 
     /**
      * Assemble both screens and show the primary stage.
@@ -90,6 +92,8 @@ public final class VectorizeView {
      */
     public VectorizeView(Stage stage) {
         this.stage = stage;
+        stage.setMinWidth(850);
+        stage.setMinHeight(680);
         // 1. build the two screens
         buildDrop();
         buildEditor();
@@ -100,8 +104,6 @@ public final class VectorizeView {
         // 3. one Scene, starting on the drop screen
         Scene scene = new Scene(dropRoot, 1100, 720);
         stage.setTitle("Vectorize");
-        stage.setMinWidth(800);
-        stage.setMinHeight(550);
         stage.setScene(scene);
         stage.show();
     }
@@ -175,7 +177,133 @@ public final class VectorizeView {
      * controls into panes.
      */
     private void buildEditor() {
-        throw new UnsupportedOperationException("TODO Phase 2: editor screen layout");
+        // ==========================================
+        // PART A: TOP & CENTER AREAS
+        // ==========================================
+
+        // TOP area (only the 3 zoom buttons)
+        HBox toolbar = new HBox(10, zoomIn, zoomOut, zoomFit);
+        toolbar.setPadding(new Insets(12));
+        editorRoot.setTop(toolbar);
+
+        // CENTER area - Preview columns and HBox growth
+        VBox originalColumn = previewColumn("Original", originalPane);
+        VBox vectorColumn = previewColumn("Vector", vectorPane);
+
+        originalColumn.setPrefWidth(0);
+        vectorColumn.setPrefWidth(0);
+
+        HBox previews = new HBox(15, originalColumn, vectorColumn);
+        HBox.setHgrow(originalColumn, Priority.ALWAYS);
+        HBox.setHgrow(vectorColumn, Priority.ALWAYS);
+        previews.setPadding(new Insets(0, 15, 15, 15));
+        editorRoot.setCenter(previews);
+
+        // Binding for original ImageView size and ratio
+        original.fitWidthProperty().bind(originalPane.widthProperty().subtract(20));
+        original.fitHeightProperty().bind(originalPane.heightProperty().subtract(20));
+        original.setPreserveRatio(true);
+        originalPane.getChildren().add(original);
+
+        // Layers in vectorPane (checker behind vector)
+        vectorPane.getChildren().addAll(checker, vector);
+
+
+        // ==========================================
+        // PART B: RIGHT AREA (SETTINGS PANEL)
+        // ==========================================
+
+        // Make Back and Next share the row width equally
+        back.setMaxWidth(Double.MAX_VALUE);
+        next.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(back, Priority.ALWAYS);
+        HBox.setHgrow(next, Priority.ALWAYS);
+        savePreset.setMaxWidth(Double.MAX_VALUE);
+        loadPreset.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(savePreset, Priority.ALWAYS);
+        HBox.setHgrow(loadPreset, Priority.ALWAYS);
+
+        HBox navRow = new HBox(10, back, next);
+        HBox presetRow = new HBox(10, savePreset, loadPreset);
+
+        VBox settings = new VBox(10,
+                section("Detail"), detail,
+                section("Colors"), colorMode, customColors, detectedPalette,
+                section("Background"), removeBackground,
+                spacer(),
+                navRow,
+                exportAll,
+                section("Preset"), presetRow);
+
+        settings.setPadding(new Insets(15));
+        settings.setPrefWidth(260);
+        settings.setStyle(SURFACE);
+
+        // Make wide controls fill the panel width
+        detail.setMaxWidth(Double.MAX_VALUE);
+        colorMode.setMaxWidth(Double.MAX_VALUE);
+        customColors.setMaxWidth(Double.MAX_VALUE);
+        exportAll.setMaxWidth(Double.MAX_VALUE);
+
+        // Apply button styles from DESIGN.md
+        exportAll.setStyle(PRIMARY_BTN);
+        savePreset.setStyle(TOOL_BTN);
+        loadPreset.setStyle(TOOL_BTN);
+
+        // Margin around the settings panel and placement on the right
+        BorderPane.setMargin(settings, new Insets(26, 15, 15, 0));
+        editorRoot.setRight(settings);
+
+
+        // ==========================================
+        // PART C: BOTTOM AREA (STATUS BAR)
+        // ==========================================
+
+        Region fileGap = new Region();
+        HBox.setHgrow(fileGap, Priority.ALWAYS);
+
+        // Progress bars follow the Cancel button: same width (top bar) and same height (both bars)
+        // Cancel button = width of the settings panel's controls (panel width minus its 15+15 padding)
+        cancelProcessing.prefWidthProperty().bind(settings.widthProperty().subtract(30));
+        fileProgress.prefWidthProperty().bind(cancelProcessing.widthProperty());
+        fileProgress.prefHeightProperty().bind(cancelProcessing.heightProperty());
+        batchProgress.prefHeightProperty().bind(cancelProcessing.heightProperty());
+        batchProgress.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(batchProgress, Priority.ALWAYS);
+
+        cancelProcessing.setStyle(WARN_BTN);
+        fileProgress.setStyle(PROGRESS);
+        batchProgress.setStyle(PROGRESS);
+
+        // Show operationMessage only when it has text (no empty line)
+        operationMessage.managedProperty().bind(operationMessage.textProperty().isNotEmpty());
+        operationMessage.visibleProperty().bind(operationMessage.textProperty().isNotEmpty());
+
+        HBox fileRow = new HBox(10, filename, fileStatus, fileGap, fileProgress);
+        fileRow.setAlignment(Pos.CENTER_LEFT);
+
+        HBox batchRow = new HBox(10, batchStatus, batchProgress, cancelProcessing);
+        batchRow.setAlignment(Pos.CENTER_LEFT);
+
+        VBox statusBar = new VBox(8, fileRow, batchRow, operationMessage);
+        statusBar.setPadding(new Insets(15));   // same as the settings panel, so right edges line up
+        statusBar.setStyle(SURFACE);
+
+        BorderPane.setMargin(statusBar, new Insets(0, 15, 15, 15));
+        editorRoot.setBottom(statusBar);
+
+
+        // ==========================================
+        // GENERAL STYLING & CONSTRAINTS
+        // ==========================================
+
+        editorRoot.setStyle(BG);
+        originalPane.setStyle(SURFACE);
+        vectorPane.setStyle(SURFACE);
+
+        originalPane.setPadding(new Insets(10));
+        vectorPane.setPadding(new Insets(10));
+        originalPane.setMinSize(0, 0);
     }
 
     private static VBox previewColumn(String heading, StackPane pane) {

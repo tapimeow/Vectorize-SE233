@@ -46,8 +46,10 @@ private static final String PRIMARY_BTN = "-fx-background-color: #4338CA; -fx-te
 private static final String TOOL_BTN    = "-fx-background-color: #0F766E; -fx-text-fill: white;"
                                         + " -fx-background-radius: 8;";
 private static final String WARN_BTN    = "-fx-background-color: #D97706; -fx-text-fill: white;"
-                                        + " -fx-background-radius: 8;";
+                                        + " -fx-background-radius: 8; -fx-padding: 4 12;";
 private static final String TITLE_FONT  = "-fx-font-family: 'Georgia'; -fx-font-size: 26; -fx-font-weight: bold;";
+private static final String PROGRESS    = "-fx-accent: #4338CA; -fx-control-inner-background: #F5F5F4;"
+                                        + " -fx-text-box-border: #E7E5E4; -fx-shadow-highlight-color: transparent;";
 ```
 
 ## Where each style goes
@@ -59,6 +61,7 @@ private static final String TITLE_FONT  = "-fx-font-family: 'Georgia'; -fx-font-
 | `chooseFiles`, `exportAll` | `PRIMARY_BTN` |
 | `savePreset`, `loadPreset` | `TOOL_BTN` |
 | `cancelProcessing` | `WARN_BTN` |
+| `fileProgress`, `batchProgress` | `PROGRESS` (indigo fill, soft grey track) |
 | app title, preview headings | `TITLE_FONT` (smaller size for headings) |
 | `fileStatus`, `operationMessage` (Phase 5/6) | `-fx-text-fill:` Success / Error / Info color |
 
