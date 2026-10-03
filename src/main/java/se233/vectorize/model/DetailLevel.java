@@ -13,9 +13,9 @@ public enum DetailLevel {
      * different Low/Medium/High outputs without exhausting memory. */
     public int maxDimension() {
         return switch (this) {
-            case LOW -> 512;
-            case MEDIUM -> 1024;
-            case HIGH -> 2048;
+            case LOW -> 360;
+            case MEDIUM -> 640;
+            case HIGH -> 960;
         };
     }
     /** Phase 4, FR-007: choose a corresponding tracer tolerance or equivalent
