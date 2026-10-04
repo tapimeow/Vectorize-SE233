@@ -63,6 +63,7 @@ public final class VectorizeView {
     private boolean fitMode = true;
     private boolean svgLoading;
     private int svgWidth = 640, svgHeight = 480;
+    private Image currentOriginal;
 
     // Design tokens from DESIGN.md
     private static final String BG          = "-fx-background-color: #FAFAF9;";
@@ -113,7 +114,6 @@ public final class VectorizeView {
         stage.setTitle("Vectorize");
         stage.setScene(scene);
         stage.show();
-        //showEditor();
     }
 
     /**
@@ -387,11 +387,39 @@ public final class VectorizeView {
     }
 
     public void showEditor() { stage.getScene().setRoot(editorRoot); }
+
     public void showDrop() { stage.getScene().setRoot(dropRoot); }
+
     public Stage stage() { return stage; }
+
     /** Phase 5, FR-004: load the selected original without blocking FX; verify
      * error handling and fit it beside the vector preview. */
-    public void showOriginal(Path path) { throw new UnsupportedOperationException("TODO Phase 5: original preview"); }
+    public void showOriginal(Path path) {
+        if (path == null) {
+            currentOriginal = null;
+            original.setImage(null);
+            fileStatus.setText("");
+            return;
+        }
+
+        fileStatus.setText("");
+        String url = path.toUri().toString();
+
+        // Load in the background with backgroundLoading = true
+        Image image = new Image(url, true);
+        currentOriginal = image;
+
+        // Listen for loading errors without blocking FX
+        image.errorProperty().addListener((obs, wasError, isError) -> {
+            if (isError && currentOriginal == image) {
+                fileStatus.setText("Could not load image");
+                original.setImage(null);
+            }
+        });
+
+        original.setImage(image);
+    }
+
     /** Phase 5, FR-004/FR-010: display only a validated, current-generation SVG
      * through WebView. Parse useful dimensions for Zoom to Fit, disable scripts,
      * and test asynchronous load plus replacement by a newer result. FX only. */
