@@ -3,6 +3,7 @@ package se233.vectorize.view;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -15,6 +16,8 @@ import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -27,9 +30,11 @@ import javafx.stage.Stage;
 import se233.vectorize.model.ColorMode;
 import se233.vectorize.model.DetailLevel;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /** Pure JavaFX presentation: controls and layout, no processing or file extraction. */
 public final class VectorizeView {
@@ -106,6 +111,7 @@ public final class VectorizeView {
         stage.setTitle("Vectorize");
         stage.setScene(scene);
         stage.show();
+        //showEditor();
     }
 
     /**
@@ -270,6 +276,10 @@ public final class VectorizeView {
         batchProgress.prefHeightProperty().bind(cancelProcessing.heightProperty());
         batchProgress.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(batchProgress, Priority.ALWAYS);
+        // Right edge of the batch bar lines up with the Vector box above:
+        // the Cancel button sits 30 px right of the Vector box (previews 15 + settings margin),
+        // and the HBox spacing already gives 10, so add the missing 20.
+        HBox.setMargin(batchProgress, new Insets(0, 20, 0, 0));
 
         cancelProcessing.setStyle(WARN_BTN);
         fileProgress.setStyle(PROGRESS);
@@ -325,9 +335,43 @@ public final class VectorizeView {
      * Paths from the dragboard, and pass them to the controller. The controller
      * delegates decoding/ZIP to a worker. Handle an empty/nonfile drag and test
      * one, multiple and ZIP drops without heavy work on FX. */
+
     public void onDrop(Consumer<List<Path>> receiver) {
-        throw new UnsupportedOperationException("TODO Phase 3: JavaFX file drop zone");
+        setupDropHandler(dropRoot, receiver);
+        setupDropHandler(editorRoot, receiver);
     }
+
+    private void setupDropHandler(Node node, Consumer<List<Path>> receiver) {
+        // 1. Handle drag over: accept only if the dragboard has files
+        node.setOnDragOver(event -> {
+            Dragboard db = event.getDragboard();
+            if (db.hasFiles()) {
+                event.acceptTransferModes(TransferMode.COPY);
+            }
+            event.consume();
+        });
+
+        // 2. Handle drag dropped: extract files, convert to Paths, and pass to receiver
+        node.setOnDragDropped(event -> {
+            Dragboard db = event.getDragboard();
+            boolean success = false;
+
+            if (db.hasFiles()) {
+                List<Path> paths = db.getFiles().stream()
+                        .map(File::toPath)
+                        .collect(Collectors.toList());
+
+                if (!paths.isEmpty()) {
+                    receiver.accept(paths);
+                    success = true;
+                }
+            }
+
+            event.setDropCompleted(success);
+            event.consume();
+        });
+    }
+
     public void showEditor() { stage.getScene().setRoot(editorRoot); }
     public void showDrop() { stage.getScene().setRoot(dropRoot); }
     public Stage stage() { return stage; }

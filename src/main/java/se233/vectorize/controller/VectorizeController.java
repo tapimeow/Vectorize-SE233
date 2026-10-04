@@ -1,6 +1,7 @@
 // Team ownership: Mona (Frontend/View). See README.md "Team split".
 package se233.vectorize.controller;
 
+import javafx.stage.FileChooser;
 import se233.vectorize.concurrency.ProcessingCoordinator;
 import se233.vectorize.model.AppSession;
 import se233.vectorize.model.ImageDocument;
@@ -8,9 +9,12 @@ import se233.vectorize.model.VectorizationSettings;
 import se233.vectorize.service.ImageImportService;
 import se233.vectorize.service.PresetService;
 import se233.vectorize.view.VectorizeView;
+
+import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /** Phase 5 controller: translate FX gestures into state changes/background jobs. */
 public final class VectorizeController {
@@ -38,9 +42,26 @@ public final class VectorizeController {
      * Edit Result/Hand-pick Settings. Test each gesture and keyboard/chooser cancel.
      */
     private void wire() {
-        // Teaching scaffold intentionally displays the layout without finished handlers.
-    }
+        // 1. Hook up drag and drop
+        view.onDrop(this::importPaths);
 
+        // 2. Hook up the "Choose files" button
+        view.chooseFiles.setOnAction(event -> {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Select Images or ZIP");
+            fileChooser.getExtensionFilters().addAll(
+                    new FileChooser.ExtensionFilter("Image and ZIP Files", "*.jpg", "*.jpeg", "*.png", "*.zip")
+            );
+
+            List<File> files = fileChooser.showOpenMultipleDialog(view.stage());
+            if (files != null && !files.isEmpty()) {
+                List<Path> paths = files.stream()
+                        .map(File::toPath)
+                        .collect(Collectors.toList());
+                importPaths(paths);
+            }
+        });
+    }
     /**
      * Begin asynchronous input handling, preserving valid siblings after bad files.
      * TODO Phase 3/6: show importing feedback, ask coordinator.importAsync to call
@@ -49,7 +70,40 @@ public final class VectorizeController {
      * Display per-file errors plainly. Do not block FX. FR-001–FR-003, FR-013.
      */
     public void importPaths(List<Path> paths) {
-        throw new UnsupportedOperationException("TODO Phase 3: dropped-image coordination");
+        if (paths == null || paths.isEmpty()) {
+            return;
+        }
+
+        // 1. Show importing feedback on the drop screen label
+        view.dropStatus.setText("Importing " + paths.size() + " item(s)...");
+
+        coordinator.importAsync(paths, importer,
+                result -> {
+                    if (result.documents().isEmpty()) {
+                        // 2. All files failed -> stay on drop screen and display the errors
+                        String errorText = "Import failed:\n" + String.join("\n", result.errors());
+                        view.dropStatus.setText(errorText);
+                    } else {
+                        // 3. Successful documents found -> add to session and switch to editor
+                        session.addAll(result.documents());
+                        view.showEditor();
+
+                        // Reset drop status back to its default instruction text for next time
+                        view.dropStatus.setText("JPG, PNG, multiple images, or a ZIP archive");
+
+                        // If there were partial failures, show them in the editor's operationMessage
+                        if (result.errors() != null && !result.errors().isEmpty()) {
+                            view.operationMessage.setText(String.join("\n", result.errors()));
+                        } else {
+                            view.operationMessage.setText(""); // Clear out any old messages
+                        }
+                    }
+                },
+                errorMessage -> {
+                    // 4. Batch-level failure -> stay on drop screen, show error in dropStatus
+                    view.dropStatus.setText("Error: " + errorMessage);
+                }
+        );
     }
 
     /** TODO Phase 5/6: copy changed settings to selected document, mark its cached
