@@ -29,6 +29,7 @@ import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import se233.vectorize.model.ColorMode;
 import se233.vectorize.model.DetailLevel;
+import se233.vectorize.model.VectorizationSettings;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -102,6 +103,7 @@ public final class VectorizeView {
         // 1. build the two screens
         buildDrop();
         buildEditor();
+        setupControls();
         // 2. make the WebView safe BEFORE any SVG goes in
         vector.getEngine().setJavaScriptEnabled(false);
         vector.setContextMenuEnabled(false);
@@ -370,6 +372,18 @@ public final class VectorizeView {
             event.setDropCompleted(success);
             event.consume();
         });
+    }
+
+    private void setupControls() {
+        detail.getItems().addAll(DetailLevel.values());
+        detail.setValue(VectorizationSettings.defaults().detail());
+
+        colorMode.getItems().addAll(ColorMode.values());
+        colorMode.setValue(VectorizationSettings.defaults().colorMode());
+
+        customColors.disableProperty().bind(
+                colorMode.valueProperty().isEqualTo(ColorMode.UNLIMITED)
+        );
     }
 
     public void showEditor() { stage.getScene().setRoot(editorRoot); }
