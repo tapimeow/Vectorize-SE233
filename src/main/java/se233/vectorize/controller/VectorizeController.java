@@ -61,6 +61,11 @@ public final class VectorizeController {
                 importPaths(paths);
             }
         });
+
+        // Hook up Zoom In and Zoom Out buttons
+        view.zoomIn.setOnAction(e -> view.setZoom(view.zoom() * 1.25));
+        view.zoomOut.setOnAction(e -> view.setZoom(view.zoom() / 1.25));
+        view.zoomFit.setOnAction(e -> view.zoomToFit());
     }
     /**
      * Begin asynchronous input handling, preserving valid siblings after bad files.

@@ -79,6 +79,8 @@ public final class VectorizeView {
     private static final String PROGRESS    = "-fx-accent: #4338CA; -fx-control-inner-background: #F5F5F4;"
             + " -fx-text-box-border: #E7E5E4; -fx-shadow-highlight-color: transparent;";
 
+    private static final double MIN_ZOOM = 0.1;
+    private static final double MAX_ZOOM = 5.0;
     /**
      * Assemble both screens and show the primary stage.
      * TODO Phase 2, coursebook §1.1.1 JavaFX (Stage/Scene) and §1.4.2 View
@@ -215,7 +217,12 @@ public final class VectorizeView {
 
         // Layers in vectorPane (checker behind vector)
         vectorPane.getChildren().addAll(checker, vector);
-
+        vectorPane.widthProperty().addListener((obs, oldV, newV) -> {
+            if (fitMode) applyFitZoom();
+        });
+        vectorPane.heightProperty().addListener((obs, oldV, newV) -> {
+            if (fitMode) applyFitZoom();
+        });
 
         // ==========================================
         // PART B: RIGHT AREA (SETTINGS PANEL)
@@ -431,16 +438,46 @@ public final class VectorizeView {
     public void clearSvg() { throw new UnsupportedOperationException("TODO Phase 5: pending vector state"); }
     /** Phase 5, FR-005: Zoom In/Out changes presentation, never tracing. Clamp
      * scale reasonably and test bounds while WebView is loading. */
-    public void setZoom(double value) { throw new UnsupportedOperationException("TODO Phase 5: preview zoom"); }
-    private void applyZoom(double value) { throw new UnsupportedOperationException("TODO Phase 5: bounded WebView zoom"); }
+    public void setZoom(double value) {
+        fitMode = false;
+        zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, value));
+        applyZoom(zoom);
+    }
+
+    private void applyZoom(double value) {
+        vector.setZoom(value);
+    }
+
     public double zoom() { return zoom; }
     /** Phase 5, FR-005: fit the current SVG dimensions inside vectorPane, account
      * for pane resize, and defer fit until WebView load completes. Test both tiny
      * and large SVG and a user zoom override. FX only. */
     public void zoomToFit() {
-        throw new UnsupportedOperationException("TODO Phase 5: Zoom to Fit");
+        fitMode = true;
+        if (svgLoading) {
+            return;
+        }
+        applyFitZoom();
     }
+
     private void applyFitZoom() {
-        throw new UnsupportedOperationException("TODO Phase 5: recompute fit after resize");
+        if (!fitMode || svgLoading) {
+            return;
+        }
+
+        // Account for the 10px padding on each side of vectorPane (10 + 10 = 20)
+        double availW = vectorPane.getWidth() - 20;
+        double availH = vectorPane.getHeight() - 20;
+
+        if (availW <= 0 || availH <= 0) {
+            return;
+        }
+
+        double scaleX = availW / svgWidth;
+        double scaleY = availH / svgHeight;
+        double fitScale = Math.min(scaleX, scaleY);
+
+        zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, fitScale));
+        applyZoom(zoom);
     }
 }
