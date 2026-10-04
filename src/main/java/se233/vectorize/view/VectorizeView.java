@@ -225,11 +225,15 @@ public final class VectorizeView {
 
         // Layers in vectorPane (checker behind vector)
         vectorPane.getChildren().addAll(checker, vector);
+        vectorPane.setMinSize(0, 0);
+        // Trigger drawChecker when dimensions change
         vectorPane.widthProperty().addListener((obs, oldV, newV) -> {
             if (fitMode) applyFitZoom();
+            drawChecker();
         });
         vectorPane.heightProperty().addListener((obs, oldV, newV) -> {
             if (fitMode) applyFitZoom();
+            drawChecker();
         });
 
         // ==========================================
@@ -347,6 +351,10 @@ public final class VectorizeView {
             }
         });
 
+        // Bind checker dimensions to vectorPane minus the 20px padding (10px on each side)
+        checker.widthProperty().bind(vectorPane.widthProperty().subtract(20));
+        checker.heightProperty().bind(vectorPane.heightProperty().subtract(20));
+
     }
 
     private static VBox previewColumn(String heading, StackPane pane) {
@@ -362,6 +370,30 @@ public final class VectorizeView {
         // TODO Phase 5, FR-011: draw a checkerboard sized to the vector pane so
         // missing SVG background paths visibly read as transparent. This is FX
         // presentation only; do not alter vectorization or source alpha here.
+        double w = checker.getWidth();
+        double h = checker.getHeight();
+
+        if (w <= 0 || h <= 0) {
+            return;
+        }
+
+        GraphicsContext g = checker.getGraphicsContext2D();
+        double tileSize = 16.0;
+
+        g.setFill(Color.web("#FFFFFF"));
+        g.fillRect(0, 0, w, h);
+
+        g.setFill(Color.web("#E7E5E4"));
+        int cols = (int) Math.ceil(w / tileSize);
+        int rows = (int) Math.ceil(h / tileSize);
+
+        for (int row = 0; row < rows; row++) {
+            for (int col = 0; col < cols; col++) {
+                if ((row + col) % 2 != 0) {
+                    g.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
+                }
+            }
+        }
     }
 
     /** Phase 3, FR-001: accept OS file drops on both screens, extract dropped
