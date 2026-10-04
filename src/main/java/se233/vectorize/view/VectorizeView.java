@@ -62,7 +62,7 @@ public final class VectorizeView {
     private double zoom = 1;
     private boolean fitMode = true;
     private boolean svgLoading;
-    private int svgWidth = 640, svgHeight = 480;
+    private double svgWidth = 640, svgHeight = 480;
     private Image currentOriginal;
 
     // Design tokens from DESIGN.md
@@ -81,6 +81,14 @@ public final class VectorizeView {
 
     private static final double MIN_ZOOM = 0.1;
     private static final double MAX_ZOOM = 5.0;
+    private static final java.util.regex.Pattern WIDTH_PATTERN =
+            java.util.regex.Pattern.compile("(?<![\\w-])width\\s*=\\s*['\"]([0-9.]+)['\"]");
+    private static final java.util.regex.Pattern HEIGHT_PATTERN =
+            java.util.regex.Pattern.compile("(?<![\\w-])height\\s*=\\s*['\"]([0-9.]+)['\"]");
+    private static final java.util.regex.Pattern VIEWBOX_PATTERN =
+            java.util.regex.Pattern.compile("viewBox\\s*=\\s*['\"]\\s*[0-9.]+\\s+[0-9.]+\\s+([0-9.]+)\\s+([0-9.]+)['\"]");
+
+
     /**
      * Assemble both screens and show the primary stage.
      * TODO Phase 2, coursebook §1.1.1 JavaFX (Stage/Scene) and §1.4.2 View
@@ -323,6 +331,22 @@ public final class VectorizeView {
         originalPane.setPadding(new Insets(10));
         vectorPane.setPadding(new Insets(10));
         originalPane.setMinSize(0, 0);
+
+        // Register load worker listener once in buildEditor()
+        vector.getEngine().getLoadWorker().stateProperty().addListener((obs, oldState, newState) -> {
+            if (newState == javafx.concurrent.Worker.State.SUCCEEDED) {
+                svgLoading = false;
+                if (fitMode) {
+                    zoomToFit();
+                } else {
+                    applyZoom(zoom); // Consistent with the rest of the zoom codebase
+                }
+            } else if (newState == javafx.concurrent.Worker.State.FAILED) {
+                svgLoading = false;
+                fileStatus.setText("Could not render SVG preview");
+            }
+        });
+
     }
 
     private static VBox previewColumn(String heading, StackPane pane) {
@@ -431,11 +455,66 @@ public final class VectorizeView {
      * through WebView. Parse useful dimensions for Zoom to Fit, disable scripts,
      * and test asynchronous load plus replacement by a newer result. FX only. */
     public void showSvg(String svg) {
-        throw new UnsupportedOperationException("TODO Phase 5: current SVG preview");
+        if (svg == null || svg.isEmpty()) {
+            clearSvg();
+            return;
+        }
+
+        svgLoading = true;
+        fileStatus.setText("");
+
+        // Parse dimensions from the first SVG tag or fallback to viewBox
+        parseSvgDimensions(svg);
+
+        // Load content using the SVG content type to avoid the 8px browser HTML margin
+        vector.getEngine().loadContent(svg, "image/svg+xml");
     }
+
+    private void parseSvgDimensions(String svg) {
+        try {
+            // Step 1: Isolate only the opening <svg ...> tag
+            int svgStart = svg.indexOf("<svg");
+            if (svgStart == -1) return;
+            int svgEnd = svg.indexOf('>', svgStart);
+            if (svgEnd == -1) return;
+            String svgTag = svg.substring(svgStart, svgEnd + 1);
+
+            // Step 2: Check for explicit width and height attributes within the tag
+            java.util.regex.Matcher wMat = WIDTH_PATTERN.matcher(svgTag);
+            java.util.regex.Matcher hMat = HEIGHT_PATTERN.matcher(svgTag);
+
+            if (wMat.find() && hMat.find()) {
+                // Read into local variables first to keep updates atomic
+                double w = Double.parseDouble(wMat.group(1));
+                double h = Double.parseDouble(hMat.group(1)); // Fixed group(2) -> group(1)
+                svgWidth = w;
+                svgHeight = h;
+                return;
+            }
+
+            // Step 3: Fallback to viewBox attribute if explicit width/height are missing
+            java.util.regex.Matcher vbMat = VIEWBOX_PATTERN.matcher(svgTag);
+            if (vbMat.find()) {
+                double w = Double.parseDouble(vbMat.group(1));
+                double h = Double.parseDouble(vbMat.group(2));
+                svgWidth = w;
+                svgHeight = h;
+            }
+        } catch (NumberFormatException e) {
+            // Catch only specific parsing errors so other unexpected bugs fail visibly
+        }
+    }
+
     /** Phase 5: mark a stale/missing result as pending rather than displaying the
      * previous image's SVG; preserve an understandable loading/error state. */
-    public void clearSvg() { throw new UnsupportedOperationException("TODO Phase 5: pending vector state"); }
+    public void clearSvg() {
+        svgLoading = false;
+        svgWidth = 640;
+        svgHeight = 480;
+        vector.getEngine().loadContent("");
+        fileStatus.setText("Preview pending...");
+    }
+
     /** Phase 5, FR-005: Zoom In/Out changes presentation, never tracing. Clamp
      * scale reasonably and test bounds while WebView is loading. */
     public void setZoom(double value) {
@@ -475,7 +554,7 @@ public final class VectorizeView {
 
         double scaleX = availW / svgWidth;
         double scaleY = availH / svgHeight;
-        double fitScale = Math.min(scaleX, scaleY);
+        double fitScale = Math.min(scaleX, scaleY) * 0.98;
 
         zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, fitScale));
         applyZoom(zoom);
