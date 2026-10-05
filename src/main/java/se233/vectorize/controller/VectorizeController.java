@@ -1,10 +1,14 @@
 // Team ownership: Mona (Frontend/View). See README.md "Team split".
 package se233.vectorize.controller;
 
+import javafx.scene.layout.Region;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import se233.vectorize.concurrency.ProcessingCoordinator;
 import se233.vectorize.model.AppSession;
+import se233.vectorize.exception.ConversionException;
 import se233.vectorize.model.ImageDocument;
+import se233.vectorize.model.ProcessingStatus;
 import se233.vectorize.model.VectorizationSettings;
 import se233.vectorize.service.ImageImportService;
 import se233.vectorize.service.PresetService;
@@ -12,6 +16,7 @@ import se233.vectorize.view.VectorizeView;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -26,6 +31,8 @@ public final class VectorizeController {
     private boolean updatingControls;
     private UUID displayedDocument;
     private String displayedSvg;
+    private String notice = "";
+    private final List<String> exportLog = new ArrayList<>();
 
     public VectorizeController(VectorizeView view, ProcessingCoordinator coordinator,
                               ImageImportService importer) {
@@ -66,6 +73,26 @@ public final class VectorizeController {
         view.zoomIn.setOnAction(e -> view.setZoom(view.zoom() * 1.25));
         view.zoomOut.setOnAction(e -> view.setZoom(view.zoom() / 1.25));
         view.zoomFit.setOnAction(e -> view.zoomToFit());
+
+        // Navigation
+        view.back.setOnAction(e -> { if (session.canBack()) { session.back(); showSelected(); } });
+        view.next.setOnAction(e -> { if (session.canNext()) { session.next(); showSelected(); } });
+
+        // Settings: every control change becomes one settings event
+        view.detail.valueProperty().addListener((obs, was, now) -> changeSettings(readSettings()));
+        view.colorMode.valueProperty().addListener((obs, was, now) -> changeSettings(readSettings()));
+        view.customColors.valueProperty().addListener((obs, was, now) -> changeSettings(readSettings()));
+        view.removeBackground.selectedProperty().addListener((obs, was, now) -> changeSettings(readSettings()));
+
+        // Export, cancel and presets
+        view.exportAll.setOnAction(e -> exportAll());
+        view.cancelProcessing.setDisable(true);
+        view.cancelProcessing.setOnAction(e -> {
+            coordinator.cancelActive();
+            view.batchStatus.setText("Cancelling...");
+        });
+        view.savePreset.setOnAction(e -> savePreset());
+        view.loadPreset.setOnAction(e -> loadPreset());
     }
     /**
      * Begin asynchronous input handling, preserving valid siblings after bad files.
@@ -92,16 +119,19 @@ public final class VectorizeController {
                         // 3. Successful documents found -> add to session and switch to editor
                         session.addAll(result.documents());
                         view.showEditor();
+                        coordinator.preprocess(result.documents(), this::showSelected,
+                                status -> showBatch("Preparing previews", status));
 
                         // Reset drop status back to its default instruction text for next time
                         view.dropStatus.setText("JPG, PNG, multiple images, or a ZIP archive");
 
                         // If there were partial failures, show them in the editor's operationMessage
                         if (result.errors() != null && !result.errors().isEmpty()) {
-                            view.operationMessage.setText(String.join("\n", result.errors()));
+                            notice = String.join("\n", result.errors());
                         } else {
-                            view.operationMessage.setText(""); // Clear out any old messages
+                            notice = ""; // Clear out any old messages
                         }
+                        showSelected();
                     }
                 },
                 errorMessage -> {
@@ -111,45 +141,162 @@ public final class VectorizeController {
         );
     }
 
-    /** TODO Phase 5/6: copy changed settings to selected document, mark its cached
-     * preview stale, and request coordinator.refresh. Ignore programmatic control
-     * changes made while navigating. Test rapid changes and per-image restoration.
-     * FR-006–FR-010; FX thread only. */
+    /** Build settings from the current controls; a half-edited spinner keeps the old count. */
+    private VectorizationSettings readSettings() {
+        Integer colors = view.customColors.getValue();
+        return new VectorizationSettings(view.detail.getValue(), view.colorMode.getValue(),
+                colors == null ? VectorizationSettings.defaults().customColors() : colors,
+                view.removeBackground.isSelected());
+    }
+
+    /** Copy changed settings to the selected document, mark its preview stale and
+     * request a fresh one. Programmatic control changes (navigation) are ignored. */
     private void changeSettings(VectorizationSettings settings) {
-        throw new UnsupportedOperationException("TODO Phase 5: settings event");
+        if (updatingControls || session.isEmpty()) return;
+        if (settings.detail() == null || settings.colorMode() == null) return;
+        ImageDocument document = session.selected();
+        if (settings.equals(document.settings())) return;
+        document.settings(settings);
+        showSelected();
+        coordinator.refresh(document, this::showSelected);
     }
 
-    /** TODO Phase 5: redraw current original/SVG or pending/error state, detail/
-     * color/background controls, detected swatches, index, Back/Next enablement,
-     * and per-file progress. Guard obsolete previews via document generation.
-     * All WebView/control mutations must run on FX. FR-004–FR-012. */
+    /** Redraw everything that depends on the selected document. */
     private void showSelected() {
-        throw new UnsupportedOperationException("TODO Phase 5: selected-image view state");
+        if (session.isEmpty()) return;
+        ImageDocument document = session.selected();
+
+        if (!document.id().equals(displayedDocument)) {
+            displayedDocument = document.id();
+            displayedSvg = null;
+            view.showOriginal(document.source());
+        }
+
+        // Only a result that matches the current settings may be shown
+        if (document.hasCurrentResult()) {
+            if (!document.svg().equals(displayedSvg)) {
+                displayedSvg = document.svg();
+                view.showSvg(displayedSvg);
+            }
+        } else if (displayedSvg != null || document.status() != ProcessingStatus.READY) {
+            displayedSvg = null;
+            view.clearSvg();
+        }
+
+        updatingControls = true;
+        try {
+            VectorizationSettings settings = document.settings();
+            view.detail.setValue(settings.detail());
+            view.colorMode.setValue(settings.colorMode());
+            view.customColors.getValueFactory().setValue(settings.customColors());
+            view.removeBackground.setSelected(settings.removeBackground());
+        } finally {
+            updatingControls = false;
+        }
+
+        view.detectedPalette.getChildren().clear();
+        for (int rgb : document.detectedColors()) {
+            Region swatch = new Region();
+            swatch.setPrefSize(24, 24);
+            swatch.setStyle(String.format("-fx-background-color: #%06X; -fx-background-radius: 4;"
+                    + " -fx-border-color: #E7E5E4; -fx-border-radius: 4;", rgb & 0xFFFFFF));
+            view.detectedPalette.getChildren().add(swatch);
+        }
+
+        view.filename.setText((session.selectedIndex() + 1) + " / " + session.size()
+                + " \u2022 " + document.displayName());
+        view.fileStatus.setText(document.status().name());
+        view.fileProgress.setProgress(document.status() == ProcessingStatus.RUNNING
+                ? javafx.scene.control.ProgressIndicator.INDETERMINATE_PROGRESS : document.progress());
+        view.back.setDisable(!session.canBack());
+        view.next.setDisable(!session.canNext());
+        view.operationMessage.setText(document.status() == ProcessingStatus.FAILED
+                && document.error() != null ? document.error() : notice);
     }
 
-    /** TODO Phase 6/7: render honest completed/failed/cancelled counts and current
-     * stage in footer; never pretend the CLI gives exact internal percentages.
-     * FX callback only. Test partial failure and cancellation. */
+    /** Render honest completed/failed/cancelled counts; the CLI gives no exact percentages. */
     private void showBatch(String action, ProcessingCoordinator.BatchStatus status) {
-        throw new UnsupportedOperationException("TODO Phase 6: batch progress display");
+        String text = status.message() == null || status.message().isEmpty() ? action : status.message();
+        view.batchStatus.setText(text);
+        boolean running = status.completed() < status.total();
+        view.batchProgress.setProgress(status.total() == 0 ? 0
+                : (double) status.completed() / status.total());
+        view.cancelProcessing.setDisable(!running);
     }
 
-    /** TODO Phase 7: open JavaFX DirectoryChooser on FX; if cancelled, do nothing;
-     * otherwise delegate batch work to coordinator.exportAll and show results.
-     * Never write SVG or invoke CLI in this handler. FR-015–FR-016. */
+    /** Ask for a folder on FX, then hand the whole batch to the coordinator. */
     private void exportAll() {
-        throw new UnsupportedOperationException("TODO Phase 7: OS folder selection");
+        if (session.isEmpty()) return;
+        DirectoryChooser chooser = new DirectoryChooser();
+        chooser.setTitle("Export SVG files to...");
+        File folder = chooser.showDialog(view.stage());
+        if (folder == null) return;
+
+        exportLog.clear();
+        coordinator.exportAll(session.documents(), folder.toPath(),
+                status -> showBatch("Exporting", status),
+                message -> {
+                    exportLog.add(message);
+                    int from = Math.max(0, exportLog.size() - 4);
+                    notice = String.join("\n", exportLog.subList(from, exportLog.size()));
+                    showSelected();
+                });
     }
 
-    /** TODO Phase 9: choose a preset path on FX, snapshot selected settings, and
-     * run PresetService.save off FX; display a concise error on failure. */
+    private static FileChooser presetChooser(String title) {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle(title);
+        chooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter("Vectorize preset", "*.properties"));
+        return chooser;
+    }
+
+    /** Snapshot the selected settings and write them off FX. */
     private void savePreset() {
-        throw new UnsupportedOperationException("TODO Phase 9: save preset gesture");
+        if (session.isEmpty()) return;
+        File chosen = presetChooser("Save preset").showSaveDialog(view.stage());
+        if (chosen == null) return;
+        Path file = chosen.toPath();
+        if (!file.getFileName().toString().contains(".")) {
+            file = file.resolveSibling(file.getFileName() + ".properties");
+        }
+        Path target = file;
+        VectorizationSettings snapshot = session.selected().settings();
+        coordinator.runBackground(() -> {
+                    try {
+                        presets.save(target, snapshot);
+                    } catch (java.io.IOException e) {
+                        throw new ConversionException(ConversionException.Kind.OUTPUT,
+                                "Could not save preset: " + e.getMessage(), e);
+                    }
+                    return target;
+                },
+                saved -> { notice = "Preset saved: " + saved.getFileName(); showSelected(); },
+                error -> { notice = error; showSelected(); });
     }
 
-    /** TODO Phase 9: choose/read preset off FX, validate it, apply to the intended
-     * ImageDocument, then request a fresh preview. Test file chooser cancellation. */
+    /** Read a preset off FX and apply it to the document that was selected at click time. */
     private void loadPreset() {
-        throw new UnsupportedOperationException("TODO Phase 9: load preset gesture");
+        if (session.isEmpty()) return;
+        File chosen = presetChooser("Load preset").showOpenDialog(view.stage());
+        if (chosen == null) return;
+        Path file = chosen.toPath();
+        ImageDocument target = session.selected();
+        coordinator.runBackground(() -> {
+                    try {
+                        return presets.load(file);
+                    } catch (java.io.IOException e) {
+                        throw new ConversionException(ConversionException.Kind.INPUT, e.getMessage(), e);
+                    }
+                },
+                settings -> {
+                    notice = "Preset loaded: " + file.getFileName();
+                    if (!settings.equals(target.settings())) {
+                        target.settings(settings);
+                        coordinator.refresh(target, this::showSelected);
+                    }
+                    showSelected();
+                },
+                error -> { notice = error; showSelected(); });
     }
 }

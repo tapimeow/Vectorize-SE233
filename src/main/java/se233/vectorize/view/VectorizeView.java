@@ -80,7 +80,7 @@ public final class VectorizeView {
             + " -fx-text-box-border: #E7E5E4; -fx-shadow-highlight-color: transparent;";
 
     private static final double MIN_ZOOM = 0.1;
-    private static final double MAX_ZOOM = 5.0;
+    private static final double MAX_ZOOM = 8.0;
     private static final java.util.regex.Pattern WIDTH_PATTERN =
             java.util.regex.Pattern.compile("(?<![\\w-])width\\s*=\\s*['\"]([0-9.]+)['\"]");
     private static final java.util.regex.Pattern HEIGHT_PATTERN =
