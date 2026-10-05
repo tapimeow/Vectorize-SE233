@@ -50,13 +50,16 @@ public final class ZipImportService implements AutoCloseable {
                     continue;
                 }
 
-                Path safeFileName = Paths.get(entry.getName()).getFileName();
-                Path destination = tempRoot.resolve(index + "_" + safeFileName);
-
-                if (!destination.normalize().startsWith(tempRoot.normalize())) {
+                // Zip Slip: check the raw entry name, before it is flattened to a file name.
+                String name = entry.getName().replace('\\', '/');
+                Path resolved = tempRoot.resolve(name).normalize();
+                if (name.startsWith("/") || name.matches("^[A-Za-z]:.*")
+                        || !resolved.startsWith(tempRoot.normalize())) {
                     throw new ConversionException(ZIP, "Unsafe entry path in " + archive.getFileName() + ": "
                     + entry.getName());
                 }
+                Path safeFileName = Paths.get(name).getFileName();
+                Path destination = tempRoot.resolve(index + "_" + safeFileName);
 
                 try (var in = zipFile.getInputStream(entry)) {
                     Files.copy(in, destination);
@@ -66,7 +69,11 @@ public final class ZipImportService implements AutoCloseable {
                 index++;
             }
         } catch (IOException e) {
+            deleteAll(results);
             throw new ConversionException(ZIP, "Failed to extract ZIP: " + e.getMessage(), e);
+        } catch (ConversionException e) {
+            deleteAll(results);                      // no partial extraction left behind
+            throw e;
         }
 
         if (results.isEmpty()) {
@@ -74,6 +81,12 @@ public final class ZipImportService implements AutoCloseable {
         }
 
         return results;
+    }
+
+    private void deleteAll(List<Path> files) {
+        for (Path file : files) {
+            try { Files.deleteIfExists(file); } catch (IOException ignored) { }
+        }
     }
 
     /** Phase 3/8: release only extraction roots owned by this service after

@@ -9,10 +9,13 @@ import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.io.IOException;
+import java.awt.image.BufferedImage;
+import java.nio.file.Files;
+import javax.imageio.ImageIO;
 
 /** Phase 4 pipeline orchestrator; no JavaFX or CLI commands here. */
 public final class VectorizationService {
-    public static final String PIPELINE_VERSION = "student-todo";
+    public static final String PIPELINE_VERSION = "autotrace-1";
     public record ConversionResult(String svg, List<Integer> detectedColors,
                                    String sourceVersion, String pipelineVersion) { }
     private final RasterPreprocessor preprocessor = new RasterPreprocessor();
@@ -35,7 +38,49 @@ public final class VectorizationService {
     public ConversionResult convert(Path source, VectorizationSettings settings,
                                     BooleanSupplier cancelled, Consumer<String> stage)
                                     throws ConversionException {
-        throw new UnsupportedOperationException("TODO Phase 4: vectorization pipeline");
+        checkCancelled(cancelled);
+        stage.accept("Reading image");
+        String version;
+        BufferedImage image;
+        try {
+            version = sourceVersion(source);
+            image = ImageIO.read(source.toFile());
+        } catch (IOException e) {
+            throw new ConversionException(ConversionException.Kind.INPUT,
+                    "Could not read " + source.getFileName() + ": " + e.getMessage(), e);
+        }
+        if (image == null) {
+            throw new ConversionException(ConversionException.Kind.INPUT,
+                    source.getFileName() + " is not a readable JPG or PNG image.");
+        }
+
+        checkCancelled(cancelled);
+        stage.accept("Preparing colors");
+        RasterPreprocessor.PreparedRaster prepared = preprocessor.prepare(image, settings);
+        image.flush();
+
+        checkCancelled(cancelled);
+        Path temp = null;
+        try {
+            temp = Files.createTempFile("vectorize-prepared-", ".png");
+            if (!ImageIO.write(prepared.image(), "png", temp.toFile())) {
+                throw new ConversionException(ConversionException.Kind.ENGINE, "No PNG writer is available.");
+            }
+            stage.accept("Tracing vectors");
+            String svg = engine.trace(temp, settings, prepared.ignoredColor(), cancelled);
+            checkCancelled(cancelled);
+            stage.accept("Checking SVG");
+            validator.validate(svg);
+            return new ConversionResult(svg, prepared.detectedColors(), version, PIPELINE_VERSION);
+        } catch (IOException e) {
+            throw new ConversionException(ConversionException.Kind.ENGINE,
+                    "Could not write the temporary image for tracing: " + e.getMessage(), e);
+        } finally {
+            prepared.image().flush();
+            if (temp != null) {
+                try { Files.deleteIfExists(temp); } catch (IOException ignored) { }
+            }
+        }
     }
 
     /**
@@ -45,6 +90,14 @@ public final class VectorizationService {
      * Filesystem work must occur on a worker, not in an Export All handler.
      */
     public static String sourceVersion(Path source) throws IOException {
-        throw new UnsupportedOperationException("TODO Phase 7: source freshness");
+        // Size + last-modified time: cheap (no full read) and catches normal edits;
+        // trade-off: a same-size rewrite within one timestamp tick would be missed.
+        return Files.size(source) + ":" + Files.getLastModifiedTime(source).toMillis();
+    }
+
+    private static void checkCancelled(BooleanSupplier cancelled) throws ConversionException {
+        if (cancelled.getAsBoolean() || Thread.currentThread().isInterrupted()) {
+            throw new ConversionException(ConversionException.Kind.CANCELLED, "Conversion cancelled.");
+        }
     }
 }

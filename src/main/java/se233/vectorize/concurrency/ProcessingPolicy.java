@@ -19,7 +19,10 @@ public final class ProcessingPolicy {
      * This pure method is safe on any thread.
      */
     public boolean isParallelCandidate(int imageCount, VectorizationSettings settings) {
-        throw new UnsupportedOperationException("TODO Phase 6: graded parallel policy");
+        return imageCount > 1
+                && settings.detail() == DetailLevel.MEDIUM
+                && settings.colorMode() == ColorMode.CUSTOM
+                && settings.customColors() == 2;
     }
 
     /**
@@ -30,6 +33,10 @@ public final class ProcessingPolicy {
      * and all-eligible snapshots. This method must not schedule worker threads.
      */
     public boolean hasParallelPair(List<VectorizationSettings> settings) {
-        throw new UnsupportedOperationException("TODO Phase 6: parallel batch decision");
+        int eligible = 0;
+        for (VectorizationSettings each : settings) {
+            if (isParallelCandidate(settings.size(), each)) eligible++;
+        }
+        return eligible >= 2;
     }
 }
