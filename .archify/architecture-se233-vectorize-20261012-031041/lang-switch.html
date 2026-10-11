@@ -1,0 +1,111 @@
+<style>
+#lang-switch{position:fixed;top:12px;right:12px;z-index:9999;display:flex;border:1px solid #8884;border-radius:8px;overflow:hidden;font:600 13px system-ui,sans-serif;background:#fff;box-shadow:0 2px 8px #0002}
+#lang-switch button{border:0;padding:6px 12px;cursor:pointer;background:transparent;color:#334}
+#lang-switch button[aria-pressed="true"]{background:#2563eb;color:#fff}
+@media (prefers-color-scheme:dark){#lang-switch{background:#1e2230}#lang-switch button{color:#cdd}}
+</style>
+<div id="lang-switch" role="group" aria-label="Language"><button data-lang="en">EN</button><button data-lang="th">ไทย</button></div>
+<script>
+(function(){
+  var TH = {
+    "SE233 Vectorize — JavaFX Raster-to-SVG Architecture": "SE233 Vectorize — โครงสร้างแอป JavaFX แปลงรูปเป็น SVG",
+    "JavaFX Raster-to-SVG Architecture Diagram": "โครงสร้างแอป JavaFX แปลงรูปเป็น SVG",
+    "Architecture component": "ส่วนประกอบของระบบ",
+    "User": "ผู้ใช้",
+    "Preset file": "ไฟล์ preset",
+    "Output folder": "โฟลเดอร์ปลายทาง",
+    "start(): wires all": "start(): ต่อทุกส่วนเข้ากัน",
+    "JavaFX layout + WebView": "หน้าจอ JavaFX + WebView",
+    "event handlers, FX thread": "รับ event บน FX thread",
+    "in-memory docs + selection": "เก็บรูปที่โหลดกับรูปที่เลือก",
+    "save/load .properties": "เซฟ/โหลดไฟล์ .properties",
+    "user-chosen path": "ที่อยู่ไฟล์ที่ผู้ใช้เลือก",
+    "JavaFX Task + pools": "JavaFX Task + thread pool",
+    "parallel vs serial rule": "ตัดสินว่ารันขนานได้ไหม",
+    "validate + load images": "เช็กไฟล์แล้วโหลดรูป",
+    "extract to temp dir": "แตกไฟล์ลงโฟลเดอร์ชั่วคราว",
+    "prepare, trace, validate": "เตรียมรูป, trace, ตรวจผล",
+    "scale, mask, quantize": "ย่อรูป, ตัดพื้นหลัง, ลดสี",
+    "foreground mask": "แยกวัตถุออกจากพื้นหลัง",
+    "palette 2-5 / unlimited": "เลือกสี 2–5 สี / ไม่จำกัด",
+    "external CLI process": "โปรแกรม CLI ภายนอก",
+    "one SVG per image": "รูปละหนึ่งไฟล์ SVG",
+    "no raster/script/empty": "กันรูปฝัง/script/ไฟล์ว่าง",
+    "*.svg, never overwrite": "*.svg ไม่เขียนทับไฟล์เดิม",
+    "Frontend / View (Mona)": "ฝั่ง Frontend / View (Mona)",
+    "Backend / Logic (Day)": "ฝั่ง Backend / Logic (Day)",
+    "drop / click": "ลากวาง / คลิก",
+    "new": "สร้าง",
+    "events": "ส่ง event",
+    "add / select": "เพิ่ม / เลือก",
+    "save / load": "เซฟ / โหลด",
+    "atomic write": "เขียนแบบ atomic",
+    "parallel?": "ขนานได้ไหม?",
+    "extract .zip": "แตก .zip",
+    "prepare": "เตรียมรูป",
+    "mask": "ตัดพื้นหลัง",
+    "analyze": "วิเคราะห์สี",
+    "convert": "แปลง",
+    "validate": "ตรวจ",
+    "temp + move": "เขียน temp แล้วย้าย",
+    "Startup & UI files": "ไฟล์เริ่มแอปและหน้าจอ",
+    "Launcher: plain main() so the fat JAR starts JavaFX": "Launcher: main() ธรรมดา ให้ fat JAR เปิด JavaFX ได้",
+    "VectorizeApplication: builds zip service, coordinator, view, controller": "VectorizeApplication: สร้าง zip service, coordinator, view, controller",
+    "VectorizeView: controls, original ImageView, SVG WebView": "VectorizeView: ปุ่มต่าง ๆ, รูปต้นฉบับ (ImageView), พรีวิว SVG (WebView)",
+    "VectorizeController: events, Back/Next, cancel, export, presets": "VectorizeController: จัดการ event, Back/Next, ยกเลิก, export, preset",
+    "Model files": "ไฟล์ Model",
+    "AppSession: list of ImageDocuments + selected index": "AppSession: รายการ ImageDocument กับรูปที่เลือกอยู่",
+    "ImageDocument: one image, its settings, status, SVG": "ImageDocument: รูปหนึ่งรูป พร้อม settings, สถานะ และ SVG",
+    "VectorizationSettings: detail, color mode, count, background": "VectorizationSettings: ความละเอียด, โหมดสี, จำนวนสี, ตัดพื้นหลัง",
+    "DetailLevel / ColorMode / ProcessingStatus enums": "enum DetailLevel / ColorMode / ProcessingStatus",
+    "Concurrency": "Concurrency (ทำงานพร้อมกัน)",
+    "ProcessingCoordinator: worker pool + single serial executor": "ProcessingCoordinator: มี worker pool กับ executor ที่รันทีละงาน",
+    "Every job is a JavaFX Task; results return on FX thread": "ทุกงานเป็น JavaFX Task แล้วส่งผลกลับมาที่ FX thread",
+    "ProcessingPolicy decides which images may run in parallel": "ProcessingPolicy เป็นตัวตัดสินว่ารูปไหนรันขนานได้",
+    "cancelActive() cancels all running Tasks": "cancelActive() ยกเลิก Task ที่รันอยู่ทั้งหมด",
+    "Pipeline & I/O": "Pipeline กับการอ่าน/เขียนไฟล์",
+    "RasterPreprocessor uses BackgroundRemoval + ColorAnalysis": "RasterPreprocessor ใช้ BackgroundRemoval + ColorAnalysis",
+    "AutoTraceVectorEngine runs autotrace CLI on a temp raster": "AutoTraceVectorEngine เรียก autotrace CLI กับรูปชั่วคราว",
+    "SvgValidationService rejects raster, script or empty SVG": "SvgValidationService ไม่รับ SVG ที่มีรูปฝัง, มี script หรือว่างเปล่า",
+    "ExportService writes temp file then moves, no overwrite": "ExportService เขียนไฟล์ temp ก่อนแล้วค่อยย้าย ไม่เขียนทับของเดิม",
+    "Errors & tests": "Error กับเทสต์",
+    "ConversionException: shared checked failure type": "ConversionException: checked exception ที่ทุก service ใช้ร่วมกัน",
+    "13 JUnit test files: pipeline, import/ZIP, export, policy, UI": "เทสต์ JUnit 13 ไฟล์: pipeline, import/ZIP, export, policy, UI",
+    "JUnitTestSuite runs all; FxTestSupport boots JavaFX": "JUnitTestSuite รันทุกเทสต์ ส่วน FxTestSupport ไว้เปิด JavaFX ตอนเทสต์"
+  };
+  var keys = Object.keys(TH).sort(function(a,b){return b.length-a.length;});
+  var orig = new WeakMap(), lang = 'en';
+  function tr(s){
+    var t = s.trim();
+    if (TH[t]) return s.replace(t, TH[t]);
+    if (s.indexOf(' · ') < 0 && s.indexOf(' — ') < 0) return s;
+    return s.split(/( · | — )/).map(function(p){ return TH[p.trim()] ? p.replace(p.trim(), TH[p.trim()]) : p; }).join('');
+  }
+  function walk(root){
+    var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {acceptNode:function(n){
+      var p = n.parentNode && n.parentNode.nodeName.toLowerCase();
+      return (p==='script'||p==='style') || (n.parentNode && n.parentNode.closest && n.parentNode.closest('#lang-switch')) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+    }});
+    var n; while ((n = w.nextNode())) {
+      if (!orig.has(n)) orig.set(n, n.nodeValue);
+      var o = orig.get(n), v = lang==='th' ? tr(o) : o;
+      if (n.nodeValue !== v) n.nodeValue = v;
+    }
+  }
+  var docTitle = document.title;
+  function apply(l){
+    lang = l;
+    document.documentElement.lang = l;
+    document.title = l==='th' ? tr(docTitle) : docTitle;
+    walk(document.body);
+    document.querySelectorAll('#lang-switch button').forEach(function(b){ b.setAttribute('aria-pressed', b.dataset.lang===l); });
+    try { localStorage.setItem('archify-lang', l); } catch(e){}
+  }
+  var busy = false;
+  new MutationObserver(function(){ if (busy || lang==='en') return; busy = true; walk(document.body); busy = false; })
+    .observe(document.body, {childList:true, subtree:true, characterData:true});
+  document.getElementById('lang-switch').addEventListener('click', function(e){ var b = e.target.closest('button'); if (b) apply(b.dataset.lang); });
+  var saved = 'en'; try { saved = localStorage.getItem('archify-lang') || 'en'; } catch(e){}
+  apply(saved);
+})();
+</script>

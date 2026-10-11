@@ -1,0 +1,651 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "SE233 Vectorize — JavaFX Raster-to-SVG Architecture",
+    "output": ".archify/architecture-se233-vectorize-20261012-031041/se233-vectorize.html",
+    "quality_profile": "showcase",
+    "locale": "en",
+    "repository": {
+      "url": "https://github.com/daydeda/se233-vectorize.git",
+      "provider": "github",
+      "link_mode": "local-only",
+      "revision": "7679ef338121e38761c1e458fa4b0cd786ab55b4"
+    }
+  },
+  "components": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "User",
+      "sublabel": "JPG / PNG / ZIP",
+      "pos": [
+        20,
+        360
+      ],
+      "size": [
+        130,
+        60
+      ]
+    },
+    {
+      "id": "app",
+      "type": "frontend",
+      "label": "VectorizeApplication",
+      "sublabel": "start(): wires all",
+      "pos": [
+        260,
+        200
+      ],
+      "size": [
+        170,
+        60
+      ],
+      "sources": [
+        {
+          "path": "src/main/java/se233/vectorize/VectorizeApplication.java",
+          "line": 14,
+          "end_line": 30
+        },
+        {
+          "path": "src/main/java/se233/vectorize/Launcher.java",
+          "line": 6,
+          "end_line": 10
+        }
+      ]
+    },
+    {
+      "id": "view",
+      "type": "frontend",
+      "label": "VectorizeView",
+      "sublabel": "JavaFX layout + WebView",
+      "pos": [
+        260,
+        360
+      ],
+      "size": [
+        170,
+        60
+      ],
+      "tag": "Mona",
+      "sources": [
+        {
+          "path": "src/main/java/se233/vectorize/view/VectorizeView.java",
+          "line": 41,
+          "end_line": 60
+        }
+      ]
+    },
+    {
+      "id": "controller",
+      "type": "frontend",
+      "label": "VectorizeController",
+      "sublabel": "event handlers, FX thread",
+      "pos": [
+        520,
+        360
+      ],
+      "size": [
+        170,
+        60
+      ],
+      "tag": "Mona",
+      "sources": [
+        {
+          "path": "src/main/java/se233/vectorize/controller/VectorizeController.java",
+          "line": 25,
+          "end_line": 125
+        }
+      ]
+    },
+    {
+      "id": "session",
+      "type": "database",
+      "label": "AppSession",
+      "sublabel": "in-memory docs + selection",
+      "pos": [
+        520,
+        200
+      ],
+      "size": [
+        170,
+        60
+      ],
+      "sources": [
+        {
+          "path": "src/main/java/se233/vectorize/model/AppSession.java",
+          "line": 7,
+          "end_line": 55
+        },
+        {
+          "path": "src/main/java/se233/vectorize/model/ImageDocument.java",
+          "line": 10,
+          "end_line": 99
+        }
+      ]
+    },
+    {
+      "id": "presets",
+      "type": "backend",
+      "label": "PresetService",
+      "sublabel": "save/load .properties",
+      "pos": [
+        520,
+        520
+      ],
+      "size": [
+        170,
+        60
+      ],
+      "sources": [
+        {
+          "path": "src/main/java/se233/vectorize/service/PresetService.java",
+          "line": 20,
+          "end_line": 95
+        },
+        {
+          "path": "src/main/java/se233/vectorize/controller/VectorizeController.java",
+          "line": 255,
+          "end_line": 300
+        }
+      ]
+    },
+    {
+      "id": "presetfile",
+      "type": "database",
+      "label": "Preset file",
+      "sublabel": "user-chosen path",
+      "pos": [
+        520,
+        660
+      ],
+      "size": [
+        170,
+        60
+      ]
+    },
+    {
+      "id": "coordinator",
+      "type": "messagebus",
+      "label": "ProcessingCoordinator",
+      "sublabel": "JavaFX Task + pools",
+      "pos": [
+        800,
+        360
+      ],
+      "size": [
+        180,
+        60
+      ],
+      "tag": "Day",
+      "sources": [
+        {
+          "path": "src/main/java/se233/vectorize/concurrency/ProcessingCoordinator.java",
+          "line": 27,
+          "end_line": 75
+        },
+        {
+          "path": "src/main/java/se233/vectorize/concurrency/ProcessingCoordinator.java",
+          "line": 160,
+          "end_line": 225
+        }
+      ]
+    },
+    {
+      "id": "policy",
+      "type": "backend",
+      "label": "ProcessingPolicy",
+      "sublabel": "parallel vs serial rule",
+      "pos": [
+        800,
+        200
+      ],
+      "size": [
+        180,
+        60
+      ],
+      "sources": [
+        {
+          "path": "src/main/java/se233/vectorize/concurrency/ProcessingPolicy.java",
+          "line": 11,
+          "end_line": 42
+        },
+        {
+          "path": "src/main/java/se233/vectorize/concurrency/ProcessingCoordinator.java",
+          "line": 84,
+          "end_line": 110
+        }
+      ]
+    },
+    {
+      "id": "importer",
+      "type": "backend",
+      "label": "ImageImportService",
+      "sublabel": "validate + load images",
+      "pos": [
+        800,
+        520
+      ],
+      "size": [
+        180,
+        60
+      ],
+      "sources": [
+        {
+          "path": "src/main/java/se233/vectorize/service/ImageImportService.java",
+          "line": 17,
+          "end_line": 93
+        }
+      ]
+    },
+    {
+      "id": "zip",
+      "type": "backend",
+      "label": "ZipImportService",
+      "sublabel": "extract to temp dir",
+      "pos": [
+        800,
+        660
+      ],
+      "size": [
+        180,
+        60
+      ],
+      "sources": [
+        {
+          "path": "src/main/java/se233/vectorize/service/ZipImportService.java",
+          "line": 18,
+          "end_line": 115
+        }
+      ]
+    },
+    {
+      "id": "vectorization",
+      "type": "backend",
+      "label": "VectorizationService",
+      "sublabel": "prepare, trace, validate",
+      "pos": [
+        1100,
+        360
+      ],
+      "size": [
+        180,
+        60
+      ],
+      "sources": [
+        {
+          "path": "src/main/java/se233/vectorize/service/VectorizationService.java",
+          "line": 17,
+          "end_line": 103
+        }
+      ]
+    },
+    {
+      "id": "preprocessor",
+      "type": "backend",
+      "label": "RasterPreprocessor",
+      "sublabel": "scale, mask, quantize",
+      "pos": [
+        1100,
+        200
+      ],
+      "size": [
+        180,
+        60
+      ],
+      "sources": [
+        {
+          "path": "src/main/java/se233/vectorize/service/RasterPreprocessor.java",
+          "line": 16,
+          "end_line": 60
+        }
+      ]
+    },
+    {
+      "id": "background",
+      "type": "backend",
+      "label": "BackgroundRemovalService",
+      "sublabel": "foreground mask",
+      "pos": [
+        980,
+        60
+      ],
+      "size": [
+        190,
+        60
+      ],
+      "sources": [
+        {
+          "path": "src/main/java/se233/vectorize/service/BackgroundRemovalService.java",
+          "line": 11,
+          "end_line": 120
+        }
+      ]
+    },
+    {
+      "id": "colors",
+      "type": "backend",
+      "label": "ColorAnalysisService",
+      "sublabel": "palette 2-5 / unlimited",
+      "pos": [
+        1220,
+        60
+      ],
+      "size": [
+        190,
+        60
+      ],
+      "sources": [
+        {
+          "path": "src/main/java/se233/vectorize/service/ColorAnalysisService.java",
+          "line": 12,
+          "end_line": 170
+        }
+      ]
+    },
+    {
+      "id": "engine",
+      "type": "backend",
+      "label": "AutoTraceVectorEngine",
+      "sublabel": "implements VectorEngine",
+      "pos": [
+        1370,
+        360
+      ],
+      "size": [
+        190,
+        60
+      ],
+      "sources": [
+        {
+          "path": "src/main/java/se233/vectorize/adapter/AutoTraceVectorEngine.java",
+          "line": 16,
+          "end_line": 125
+        },
+        {
+          "path": "src/main/java/se233/vectorize/adapter/VectorEngine.java",
+          "line": 11,
+          "end_line": 14
+        }
+      ]
+    },
+    {
+      "id": "autotrace",
+      "type": "external",
+      "label": "autotrace",
+      "sublabel": "external CLI process",
+      "pos": [
+        1390,
+        200
+      ],
+      "size": [
+        150,
+        60
+      ]
+    },
+    {
+      "id": "export",
+      "type": "backend",
+      "label": "ExportService",
+      "sublabel": "one SVG per image",
+      "pos": [
+        1100,
+        520
+      ],
+      "size": [
+        180,
+        60
+      ],
+      "sources": [
+        {
+          "path": "src/main/java/se233/vectorize/service/ExportService.java",
+          "line": 17,
+          "end_line": 117
+        }
+      ]
+    },
+    {
+      "id": "validator",
+      "type": "security",
+      "label": "SvgValidationService",
+      "sublabel": "no raster/script/empty",
+      "pos": [
+        1370,
+        520
+      ],
+      "size": [
+        190,
+        60
+      ],
+      "sources": [
+        {
+          "path": "src/main/java/se233/vectorize/service/SvgValidationService.java",
+          "line": 21,
+          "end_line": 128
+        }
+      ]
+    },
+    {
+      "id": "outdir",
+      "type": "database",
+      "label": "Output folder",
+      "sublabel": "*.svg, never overwrite",
+      "pos": [
+        1100,
+        660
+      ],
+      "size": [
+        180,
+        60
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Frontend / View (Mona)",
+      "wraps": [
+        "app",
+        "view",
+        "controller",
+        "session"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Backend / Logic (Day)",
+      "wraps": [
+        "coordinator",
+        "policy",
+        "importer",
+        "zip",
+        "vectorization",
+        "preprocessor",
+        "background",
+        "colors",
+        "engine",
+        "export",
+        "validator"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "user-view",
+      "from": "user",
+      "to": "view",
+      "label": "drop / click",
+      "variant": "emphasis"
+    },
+    {
+      "id": "app-view",
+      "from": "app",
+      "to": "view",
+      "label": "new"
+    },
+    {
+      "id": "view-controller",
+      "from": "view",
+      "to": "controller",
+      "label": "events",
+      "variant": "emphasis"
+    },
+    {
+      "id": "controller-session",
+      "from": "controller",
+      "to": "session",
+      "label": "add / select"
+    },
+    {
+      "id": "controller-presets",
+      "from": "controller",
+      "to": "presets",
+      "label": "save / load",
+      "variant": "dashed"
+    },
+    {
+      "id": "presets-file",
+      "from": "presets",
+      "to": "presetfile",
+      "label": "atomic write"
+    },
+    {
+      "id": "controller-coordinator",
+      "from": "controller",
+      "to": "coordinator",
+      "label": "import/export",
+      "variant": "emphasis"
+    },
+    {
+      "id": "coordinator-policy",
+      "from": "coordinator",
+      "to": "policy",
+      "label": "parallel?"
+    },
+    {
+      "id": "coordinator-importer",
+      "from": "coordinator",
+      "to": "importer",
+      "label": "importPaths"
+    },
+    {
+      "id": "importer-zip",
+      "from": "importer",
+      "to": "zip",
+      "label": "extract .zip"
+    },
+    {
+      "id": "coordinator-vectorization",
+      "from": "coordinator",
+      "to": "vectorization",
+      "label": "preview Task",
+      "variant": "emphasis"
+    },
+    {
+      "id": "coordinator-export",
+      "from": "coordinator",
+      "to": "export",
+      "label": "exportAll"
+    },
+    {
+      "id": "vectorization-preprocessor",
+      "from": "vectorization",
+      "to": "preprocessor",
+      "label": "prepare"
+    },
+    {
+      "id": "preprocessor-background",
+      "from": "preprocessor",
+      "to": "background",
+      "label": "mask"
+    },
+    {
+      "id": "preprocessor-colors",
+      "from": "preprocessor",
+      "to": "colors",
+      "label": "analyze"
+    },
+    {
+      "id": "vectorization-engine",
+      "from": "vectorization",
+      "to": "engine",
+      "label": "trace",
+      "variant": "emphasis"
+    },
+    {
+      "id": "engine-autotrace",
+      "from": "engine",
+      "to": "autotrace",
+      "label": "ProcessBuilder"
+    },
+    {
+      "id": "export-vectorization",
+      "from": "export",
+      "to": "vectorization",
+      "label": "convert"
+    },
+    {
+      "id": "export-validator",
+      "from": "export",
+      "to": "validator",
+      "label": "validate"
+    },
+    {
+      "id": "export-outdir",
+      "from": "export",
+      "to": "outdir",
+      "label": "temp + move"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Startup & UI files",
+      "items": [
+        "Launcher: plain main() so the fat JAR starts JavaFX",
+        "VectorizeApplication: builds zip service, coordinator, view, controller",
+        "VectorizeView: controls, original ImageView, SVG WebView",
+        "VectorizeController: events, Back/Next, cancel, export, presets"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Model files",
+      "items": [
+        "AppSession: list of ImageDocuments + selected index",
+        "ImageDocument: one image, its settings, status, SVG",
+        "VectorizationSettings: detail, color mode, count, background",
+        "DetailLevel / ColorMode / ProcessingStatus enums"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Concurrency",
+      "items": [
+        "ProcessingCoordinator: worker pool + single serial executor",
+        "Every job is a JavaFX Task; results return on FX thread",
+        "ProcessingPolicy decides which images may run in parallel",
+        "cancelActive() cancels all running Tasks"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Pipeline & I/O",
+      "items": [
+        "RasterPreprocessor uses BackgroundRemoval + ColorAnalysis",
+        "AutoTraceVectorEngine runs autotrace CLI on a temp raster",
+        "SvgValidationService rejects raster, script or empty SVG",
+        "ExportService writes temp file then moves, no overwrite"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Errors & tests",
+      "items": [
+        "ConversionException: shared checked failure type",
+        "13 JUnit test files: pipeline, import/ZIP, export, policy, UI",
+        "JUnitTestSuite runs all; FxTestSupport boots JavaFX"
+      ]
+    }
+  ]
+}
