@@ -1,0 +1,496 @@
+<style>
+#file-guide{max-width:1180px;margin:32px auto 80px;padding:0 16px;font:15px/1.65 system-ui,"Segoe UI","Noto Sans Thai",sans-serif;color:inherit}
+#file-guide h2{font-size:26px;margin:40px 0 8px}
+#file-guide h3{font-size:19px;margin:0 0 6px}
+#file-guide h4{font-size:13px;letter-spacing:.06em;text-transform:uppercase;opacity:.7;margin:14px 0 4px}
+#file-guide p{margin:6px 0}
+#file-guide ul,#file-guide ol{margin:4px 0 4px 20px;padding:0}
+#file-guide li{margin:3px 0}
+#file-guide code{font:13px ui-monospace,Consolas,monospace;background:rgba(127,127,127,.16);padding:1px 5px;border-radius:4px}
+#file-guide .card{border:1px solid rgba(127,127,127,.3);border-radius:12px;padding:16px 20px;margin:14px 0;background:rgba(127,127,127,.06)}
+#file-guide .path{font:12px ui-monospace,Consolas,monospace;opacity:.65}
+#file-guide .own{display:inline-block;font-size:12px;padding:1px 8px;border-radius:99px;margin-left:8px;vertical-align:middle;border:1px solid currentColor;opacity:.8}
+#file-guide .why{border-left:3px solid #2563eb;padding:4px 12px;margin:10px 0;background:rgba(37,99,235,.08);border-radius:0 8px 8px 0}
+#file-guide .qa{border-left:3px solid #d97706;padding:4px 12px;margin:10px 0;background:rgba(217,119,6,.08);border-radius:0 8px 8px 0}
+#file-guide .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+#file-guide table{border-collapse:collapse;width:100%;font-size:14px}
+#file-guide td,#file-guide th{border:1px solid rgba(127,127,127,.3);padding:6px 10px;text-align:left;vertical-align:top}
+html[lang="th"] #file-guide .en{display:none}
+html:not([lang="th"]) #file-guide .th{display:none}
+</style>
+
+<section id="file-guide">
+
+<!-- ===================== OVERVIEW ===================== -->
+<h2 class="en">📘 File guide: what each file does, and how and why the files connect</h2>
+<h2 class="th">📘 คู่มือไฟล์: แต่ละไฟล์ทำอะไร เชื่อมกันยังไง และทำไมถึงออกแบบแบบนี้</h2>
+
+<div class="card">
+<h3 class="en">The big idea in 30 seconds</h3>
+<h3 class="th">สรุปภาพรวมใน 30 วินาที</h3>
+<p class="en">The app is split into <b>layers</b>, and each layer only talks to the layer below it:</p>
+<p class="th">แอปนี้แบ่งเป็น<b>ชั้น ๆ (layer)</b> แต่ละชั้นคุยกับชั้นที่อยู่ถัดลงไปเท่านั้น:</p>
+<ol class="en">
+<li><b>View</b> (<code>VectorizeView</code>): only draws the screen. It has no logic.</li>
+<li><b>Controller</b> (<code>VectorizeController</code>): listens to clicks and drops, then decides what should happen.</li>
+<li><b>Coordinator</b> (<code>ProcessingCoordinator</code>): moves heavy work off the UI thread into background <code>Task</code>s, and brings results back.</li>
+<li><b>Services</b> (<code>service/*</code>): do the real work: read files, unzip, prepare pixels, check the SVG, write files.</li>
+<li><b>Adapter</b> (<code>AutoTraceVectorEngine</code>): the only class that talks to the external <code>autotrace</code> program.</li>
+<li><b>Model</b> (<code>model/*</code>): plain data (images, settings, status) that every layer shares.</li>
+</ol>
+<ol class="th">
+<li><b>View</b> (<code>VectorizeView</code>): วาดหน้าจออย่างเดียว ไม่มี logic</li>
+<li><b>Controller</b> (<code>VectorizeController</code>): รอฟังการคลิก/ลากวาง แล้วตัดสินว่าจะให้เกิดอะไรขึ้น</li>
+<li><b>Coordinator</b> (<code>ProcessingCoordinator</code>): ย้ายงานหนักออกจาก UI thread ไปทำใน <code>Task</code> เบื้องหลัง แล้วส่งผลกลับมา</li>
+<li><b>Services</b> (<code>service/*</code>): ทำงานจริง เช่น อ่านไฟล์, แตก zip, เตรียมพิกเซล, ตรวจ SVG, เขียนไฟล์</li>
+<li><b>Adapter</b> (<code>AutoTraceVectorEngine</code>): คลาสเดียวที่คุยกับโปรแกรม <code>autotrace</code> ภายนอก</li>
+<li><b>Model</b> (<code>model/*</code>): ข้อมูลล้วน ๆ (รูป, settings, สถานะ) ที่ทุกชั้นใช้ร่วมกัน</li>
+</ol>
+<div class="why en"><b>Why layers?</b> (1) The UI never freezes, because slow work never runs on the JavaFX thread. (2) Each piece can be tested alone: tests call services directly, with no UI. (3) Swapping the tracing engine only touches one class.</div>
+<div class="why th"><b>ทำไมต้องแบ่งชั้น?</b> (1) UI ไม่ค้าง เพราะงานช้า ๆ ไม่เคยรันบน JavaFX thread (2) เทสต์แยกแต่ละส่วนได้ เทสต์เรียก service ตรง ๆ ไม่ต้องเปิด UI (3) อยากเปลี่ยน engine ที่ใช้ trace ก็แก้แค่คลาสเดียว</div>
+</div>
+
+<!-- ===================== FLOWS ===================== -->
+<h2 class="en">🔁 The 3 main flows, step by step</h2>
+<h2 class="th">🔁 3 flow หลัก ทีละขั้น</h2>
+
+<div class="grid">
+<div class="card">
+<h3 class="en">① Import (drop files)</h3><h3 class="th">① Import (ลากไฟล์เข้ามา)</h3>
+<ol class="en">
+<li><code>VectorizeView.onDrop</code> gets the dropped files as <code>List&lt;Path&gt;</code>.</li>
+<li><code>VectorizeController.importPaths</code> shows "Importing…", then calls <code>coordinator.importAsync</code>.</li>
+<li>The coordinator wraps the work in a <code>Task</code> and runs it on a worker thread.</li>
+<li>On the worker, <code>ImageImportService.importPaths</code> runs. ZIP files go to <code>ZipImportService.extract</code>. Each image is checked by <code>validateImage</code>.</li>
+<li>It returns an <code>ImportResult</code> holding the good documents plus a list of errors. One bad file does not cancel the others.</li>
+<li>Back on the FX thread (<code>setOnSucceeded</code>), the controller adds the documents to <code>AppSession</code>, switches to the editor and calls <code>coordinator.preprocess</code> to make the previews.</li>
+</ol>
+<ol class="th">
+<li><code>VectorizeView.onDrop</code> รับไฟล์ที่ลากมาเป็น <code>List&lt;Path&gt;</code></li>
+<li><code>VectorizeController.importPaths</code> โชว์ "Importing…" แล้วเรียก <code>coordinator.importAsync</code></li>
+<li>coordinator ห่องานไว้ใน <code>Task</code> แล้วส่งไปรันบน worker thread</li>
+<li>บน worker: <code>ImageImportService.importPaths</code> ทำงาน ถ้าเป็น ZIP ส่งให้ <code>ZipImportService.extract</code> แล้วเช็กทุกรูปด้วย <code>validateImage</code></li>
+<li>ได้ <code>ImportResult</code> กลับมา = รูปที่ดี + รายการ error ไฟล์เสียไฟล์เดียวไม่ทำให้ไฟล์อื่นพัง</li>
+<li>กลับมาที่ FX thread (<code>setOnSucceeded</code>) controller เอารูปใส่ <code>AppSession</code>, เปลี่ยนไปหน้า editor แล้วเรียก <code>coordinator.preprocess</code> เพื่อทำพรีวิว</li>
+</ol>
+</div>
+
+<div class="card">
+<h3 class="en">② Preview (change a setting)</h3><h3 class="th">② Preview (เปลี่ยน setting)</h3>
+<ol class="en">
+<li>The user changes Detail, Color mode, the number of colors, or Remove Background. A listener in <code>wire()</code> fires.</li>
+<li><code>changeSettings</code> builds a new <code>VectorizationSettings</code> (immutable) and sets it on the selected <code>ImageDocument</code>. That bumps the document's <b>generation</b> number.</li>
+<li><code>coordinator.refresh</code> → <code>schedulePreview</code> cancels the old preview Task, takes a snapshot (path, settings, generation) and starts a new Task.</li>
+<li>On the worker, <code>VectorizationService.convert</code> runs: read the image → <code>RasterPreprocessor.prepare</code> → write a temporary PNG → <code>engine.trace</code> → <code>validator.validate</code>.</li>
+<li>Back on FX: the result is stored <b>only if the generation still matches</b>. An old, slow result is thrown away. Then <code>showSelected</code> → <code>view.showSvg</code>.</li>
+</ol>
+<ol class="th">
+<li>ผู้ใช้เปลี่ยน Detail / Color mode / จำนวนสี / Remove Background → listener ใน <code>wire()</code> ทำงาน</li>
+<li><code>changeSettings</code> สร้าง <code>VectorizationSettings</code> ตัวใหม่ (immutable) แล้วใส่ให้ <code>ImageDocument</code> ที่เลือกอยู่ → เลข <b>generation</b> ของรูปเพิ่มขึ้น</li>
+<li><code>coordinator.refresh</code> → <code>schedulePreview</code> ยกเลิก Task พรีวิวตัวเก่า เก็บ snapshot (path, settings, generation) แล้วเริ่ม Task ใหม่</li>
+<li>บน worker: <code>VectorizationService.convert</code> = อ่านรูป → <code>RasterPreprocessor.prepare</code> → เขียน PNG ชั่วคราว → <code>engine.trace</code> → <code>validator.validate</code></li>
+<li>กลับมาที่ FX: เก็บผล<b>เฉพาะตอนที่ generation ยังตรงกัน</b> ถ้าเป็นผลเก่าที่มาช้าจะโดนทิ้ง แล้ว <code>showSelected</code> → <code>view.showSvg</code></li>
+</ol>
+</div>
+
+<div class="card">
+<h3 class="en">③ Export All</h3><h3 class="th">③ Export All</h3>
+<ol class="en">
+<li><code>exportAll()</code> in the controller opens a <code>DirectoryChooser</code> on FX. Native dialogs must run on the FX thread.</li>
+<li><code>coordinator.exportAll</code> takes an <code>ExportItem</code> snapshot of each image on FX. The worker never touches the mutable <code>ImageDocument</code>.</li>
+<li><code>ProcessingPolicy</code> decides whether each image goes to the parallel <code>workers</code> pool or the one-at-a-time <code>serial</code> executor.</li>
+<li><code>ExportService.exportOne</code> reuses the cached SVG if it is still fresh, otherwise converts again. Then it validates again, reserves a unique name, writes a temp file and moves it into place.</li>
+<li>Each Task's success, failure or cancel updates a shared <code>Batch</code> counter, and the UI shows "Exporting: 3 of 5".</li>
+</ol>
+<ol class="th">
+<li><code>exportAll()</code> ใน controller เปิด <code>DirectoryChooser</code> บน FX (dialog ของระบบต้องเปิดบน FX thread)</li>
+<li><code>coordinator.exportAll</code> ทำ snapshot เป็น <code>ExportItem</code> ของแต่ละรูปบน FX เพื่อให้ worker ไม่ไปแตะ <code>ImageDocument</code> ที่แก้ไขได้</li>
+<li><code>ProcessingPolicy</code> ตัดสินว่ารูปไหนไป pool <code>workers</code> (รันขนาน) หรือ <code>serial</code> (ทีละรูป)</li>
+<li><code>ExportService.exportOne</code>: ถ้า SVG ที่ cache ไว้ยังใหม่ก็ใช้เลย ไม่งั้น convert ใหม่ → ตรวจอีกรอบ → จองชื่อไฟล์ที่ไม่ซ้ำ → เขียนไฟล์ temp แล้วย้าย</li>
+<li>Task แต่ละตัว สำเร็จ/พัง/ยกเลิก จะไปอัปเดตตัวนับ <code>Batch</code> แล้ว UI โชว์ "Exporting: 3 of 5"</li>
+</ol>
+</div>
+</div>
+
+<div class="card">
+<h3 class="en">🧵 Thread rules (the most likely presentation question)</h3>
+<h3 class="th">🧵 กฎเรื่อง thread (น่าจะโดนถามตอนพรีเซนต์มากที่สุด)</h3>
+<table>
+<tr><th class="en">Runs on the JavaFX thread</th><th class="th">รันบน JavaFX thread</th><th class="en">Runs on worker threads</th><th class="th">รันบน worker thread</th></tr>
+<tr><td class="en">Everything in View and Controller; Task callbacks (<code>setOnSucceeded</code>/<code>Failed</code>/<code>Cancelled</code>); file/folder choosers; changes to <code>ImageDocument</code> and <code>AppSession</code></td>
+<td class="th">ทุกอย่างใน View/Controller, callback ของ Task (<code>setOnSucceeded</code>/<code>Failed</code>/<code>Cancelled</code>), dialog เลือกไฟล์/โฟลเดอร์, การแก้ <code>ImageDocument</code> และ <code>AppSession</code></td>
+<td class="en">Reading images, unzipping, preprocessing, running autotrace, validating, writing SVG and preset files</td>
+<td class="th">อ่านรูป, แตก zip, preprocess, รัน autotrace, ตรวจ SVG, เขียนไฟล์ SVG/preset</td></tr>
+</table>
+<div class="why en"><b>Why?</b> JavaFX is single-threaded: UI objects may only be touched on the FX thread, and if that thread is busy the window freezes. A <code>Task</code> runs <code>call()</code> on a worker and then fires its handlers back on the FX thread automatically, so that is the safe bridge between the two. Because the handlers always run on FX, plain <code>HashMap</code>/<code>ArrayList</code> fields in the coordinator are safe without locks.</div>
+<div class="why th"><b>ทำไม?</b> JavaFX เป็น single-thread: แตะ UI ได้เฉพาะบน FX thread และถ้า thread นี้ไม่ว่าง หน้าต่างจะค้าง <code>Task</code> รัน <code>call()</code> บน worker แล้วเรียก handler กลับมาบน FX thread ให้อัตโนมัติ เลยเป็นสะพานที่ปลอดภัยระหว่างสองฝั่ง และเพราะ handler รันบน FX เสมอ field อย่าง <code>HashMap</code>/<code>ArrayList</code> ใน coordinator เลยไม่ต้องใส่ lock</div>
+</div>
+
+<!-- ===================== PER FILE ===================== -->
+<h2 class="en">📂 Every file, one by one</h2>
+<h2 class="th">📂 ทีละไฟล์</h2>
+
+<h2 class="en" style="font-size:20px">Startup</h2><h2 class="th" style="font-size:20px">ตอนเปิดแอป</h2>
+
+<div class="card"><h3>Launcher.java <span class="own">Mona</span></h3><div class="path">se233/vectorize/Launcher.java</div>
+<p class="en">Has only <code>main()</code>, which calls <code>Application.launch(VectorizeApplication.class)</code>.</p>
+<p class="th">มีแค่ <code>main()</code> ที่เรียก <code>Application.launch(VectorizeApplication.class)</code></p>
+<div class="why en"><b>Why a separate class?</b> When a JAR's main class extends <code>Application</code> directly, Java checks for the JavaFX runtime modules and can refuse to start. A plain class that doesn't extend <code>Application</code> avoids that check.</div>
+<div class="why th"><b>ทำไมต้องแยกคลาส?</b> ถ้า main class ของ JAR extends <code>Application</code> ตรง ๆ Java จะเช็กว่ามี JavaFX runtime module ไหม และอาจไม่ยอมรัน ใช้คลาสธรรมดาที่ไม่ extends <code>Application</code> จะเลี่ยงการเช็กนี้ได้</div>
+</div>
+
+<div class="card"><h3>VectorizeApplication.java <span class="own">Mona</span></h3><div class="path">se233/vectorize/VectorizeApplication.java</div>
+<p class="en">The <b>wiring point</b> of the whole app. In <code>start(stage)</code> it creates the objects in dependency order: <code>ZipImportService</code> → <code>AutoTraceVectorEngine</code> → <code>VectorizationService(engine)</code> → <code>ProcessingCoordinator(vectorization)</code> → <code>VectorizeView(stage)</code> → <code>VectorizeController(view, coordinator, new ImageImportService(zip))</code>. In <code>stop()</code> it closes the coordinator (stops its threads) and the zip service (deletes its temporary folders).</p>
+<p class="th"><b>จุดประกอบ</b>ทั้งแอป ใน <code>start(stage)</code> จะสร้าง object ตามลำดับที่ต้องใช้กัน: <code>ZipImportService</code> → <code>AutoTraceVectorEngine</code> → <code>VectorizationService(engine)</code> → <code>ProcessingCoordinator(vectorization)</code> → <code>VectorizeView(stage)</code> → <code>VectorizeController(view, coordinator, new ImageImportService(zip))</code> ส่วนใน <code>stop()</code> จะปิด coordinator (หยุด thread) และ zip service (ลบโฟลเดอร์ชั่วคราว)</p>
+<div class="why en"><b>Why build everything here?</b> Dependencies are passed in through constructors, so you can see the whole object graph in three lines. It also lets tests build the same objects with a fake engine.</div>
+<div class="why th"><b>ทำไมสร้างทุกอย่างตรงนี้?</b> ส่ง dependency ผ่าน constructor ทำให้เห็นโครงสร้าง object ทั้งหมดในสามบรรทัด และเทสต์ก็สร้าง object ชุดเดียวกันได้โดยใช้ engine ปลอมแทน</div>
+</div>
+
+<div class="card"><h3>module-info.java <span class="own">Shared</span></h3>
+<p class="en">The Java module descriptor. It <code>requires</code> javafx.controls, javafx.web (for WebView), java.desktop (for <code>BufferedImage</code>/<code>ImageIO</code>) and java.xml (for SVG parsing), and <code>exports</code> the packages so JavaFX and the tests can reach them.</p>
+<p class="th">ไฟล์ประกาศ module ของ Java มี <code>requires</code> javafx.controls, javafx.web (สำหรับ WebView), java.desktop (สำหรับ <code>BufferedImage</code>/<code>ImageIO</code>), java.xml (สำหรับ parse SVG) และ <code>exports</code> package ต่าง ๆ ให้ JavaFX กับเทสต์เข้าถึงได้</p>
+</div>
+
+<h2 class="en" style="font-size:20px">View and controller (Frontend)</h2><h2 class="th" style="font-size:20px">View และ Controller (Frontend)</h2>
+
+<div class="card"><h3>VectorizeView.java <span class="own">Mona</span></h3><div class="path">se233/vectorize/view/VectorizeView.java</div>
+<p class="en">Builds two screens and swaps them as the Scene's root: the <b>drop screen</b> (<code>dropRoot</code>) and the <b>editor</b> (<code>editorRoot</code>). The controls are <code>public final</code> fields (<code>detail</code>, <code>colorMode</code>, <code>customColors</code>, <code>removeBackground</code>, the buttons and labels) so the controller can attach listeners to them.</p>
+<p class="th">สร้าง 2 หน้าจอแล้วสลับเป็น root ของ Scene: <b>หน้า drop</b> (<code>dropRoot</code>) กับ<b>หน้า editor</b> (<code>editorRoot</code>) ตัว control ต่าง ๆ เป็น field <code>public final</code> (<code>detail</code>, <code>colorMode</code>, <code>customColors</code>, <code>removeBackground</code>, ปุ่ม, label) เพื่อให้ controller เอา listener ไปผูกได้</p>
+<h4 class="en">Key methods</h4><h4 class="th">method สำคัญ</h4>
+<ul class="en">
+<li><code>onDrop(receiver)</code>: drag-over accepts files; drag-dropped turns them into <code>Path</code>s and passes them to the receiver.</li>
+<li><code>showOriginal(path)</code>: <code>new Image(url, true)</code> loads the image in the background so FX doesn't block.</li>
+<li><code>showSvg(svg)</code>: <code>WebView.loadContent(svg, "image/svg+xml")</code>. JavaScript is <b>disabled</b> in the constructor before any SVG goes in.</li>
+<li><code>clearSvg()</code>: shows "Preview pending…" instead of an old image.</li>
+<li><code>setZoom</code> / <code>zoomToFit</code>: only change the display scale. They never re-trace the image.</li>
+</ul>
+<ul class="th">
+<li><code>onDrop(receiver)</code>: ตอนลากผ่านจะยอมรับไฟล์ พอปล่อยจะแปลงเป็น <code>Path</code> แล้วส่งให้ receiver</li>
+<li><code>showOriginal(path)</code>: <code>new Image(url, true)</code> = โหลดรูปเบื้องหลัง FX ไม่ค้าง</li>
+<li><code>showSvg(svg)</code>: <code>WebView.loadContent(svg, "image/svg+xml")</code> และ JavaScript ถูก<b>ปิด</b>ไว้ตั้งแต่ใน constructor ก่อนจะมี SVG เข้ามา</li>
+<li><code>clearSvg()</code>: โชว์ "Preview pending…" แทนที่จะโชว์รูปเก่า</li>
+<li><code>setZoom</code> / <code>zoomToFit</code>: เปลี่ยนแค่ขนาดการแสดงผล ไม่ได้ trace รูปใหม่</li>
+</ul>
+<div class="why en"><b>Why no logic here?</b> MVC: the view only knows how to look. If the layout changes, the logic doesn't, and the reverse is true too.</div>
+<div class="why th"><b>ทำไมไม่มี logic?</b> หลัก MVC: view รู้แค่ว่าหน้าตาเป็นยังไง ถ้าเปลี่ยน layout ก็ไม่กระทบ logic และกลับกันก็เหมือนกัน</div>
+<div class="qa en"><b>Q: Why WebView for the SVG?</b> JavaFX has no built-in SVG file viewer, and WebView renders real SVG. Scripts are turned off, so a malicious SVG can't run code.</div>
+<div class="qa th"><b>ถาม: ทำไมใช้ WebView แสดง SVG?</b> JavaFX ไม่มีตัวแสดงไฟล์ SVG ในตัว แต่ WebView แสดง SVG จริงได้ และเราปิด script ไว้ SVG ที่มีโค้ดอันตรายเลยรันอะไรไม่ได้</div>
+</div>
+
+<div class="card"><h3>VectorizeController.java <span class="own">Mona</span></h3><div class="path">se233/vectorize/controller/VectorizeController.java</div>
+<p class="en">The <b>brain of the UI</b>. It owns an <code>AppSession</code> and a <code>PresetService</code>, and gets the view, coordinator and importer through its constructor. <code>wire()</code> connects every event:</p>
+<p class="th"><b>สมองของ UI</b> มี <code>AppSession</code> กับ <code>PresetService</code> เป็นของตัวเอง และรับ view, coordinator, importer ผ่าน constructor ส่วน <code>wire()</code> ผูก event ทั้งหมด:</p>
+<table>
+<tr><th>Event</th><th class="en">What happens</th><th class="th">เกิดอะไรขึ้น</th></tr>
+<tr><td>Drop / Choose files</td><td class="en"><code>importPaths</code> → <code>coordinator.importAsync</code></td><td class="th"><code>importPaths</code> → <code>coordinator.importAsync</code></td></tr>
+<tr><td>Zoom In/Out/Fit</td><td class="en">×1.25, ÷1.25, fit to pane</td><td class="th">×1.25, ÷1.25, ปรับให้พอดีกรอบ</td></tr>
+<tr><td>Back / Next</td><td class="en"><code>session.back()/next()</code> then <code>showSelected()</code></td><td class="th"><code>session.back()/next()</code> แล้ว <code>showSelected()</code></td></tr>
+<tr><td>Detail / Color / Count / Background</td><td class="en"><code>changeSettings(readSettings())</code> → <code>coordinator.refresh</code></td><td class="th"><code>changeSettings(readSettings())</code> → <code>coordinator.refresh</code></td></tr>
+<tr><td>Export All</td><td class="en">DirectoryChooser → <code>coordinator.exportAll</code></td><td class="th">DirectoryChooser → <code>coordinator.exportAll</code></td></tr>
+<tr><td>Cancel Processing</td><td class="en"><code>coordinator.cancelActive()</code></td><td class="th"><code>coordinator.cancelActive()</code></td></tr>
+<tr><td>Save / Load preset</td><td class="en">FileChooser → <code>coordinator.runBackground(presets.save/load)</code></td><td class="th">FileChooser → <code>coordinator.runBackground(presets.save/load)</code></td></tr>
+</table>
+<ul class="en">
+<li><code>showSelected()</code> redraws everything for the selected image: original, SVG (<b>only</b> if <code>hasCurrentResult()</code>), controls, palette swatches, "2 / 5 • name", status and error.</li>
+<li><code>updatingControls</code> flag: when <code>showSelected</code> sets the combo boxes itself, the listeners would fire and look like a user change. The flag makes <code>changeSettings</code> ignore those.</li>
+<li><code>showBatch</code> shows honest counts ("3 of 5") and enables Cancel only while work is running.</li>
+</ul>
+<ul class="th">
+<li><code>showSelected()</code> วาดทุกอย่างของรูปที่เลือกใหม่: รูปต้นฉบับ, SVG (<b>เฉพาะ</b>ตอน <code>hasCurrentResult()</code>), control ต่าง ๆ, สีที่ตรวจเจอ, "2 / 5 • ชื่อไฟล์", สถานะ, error</li>
+<li>flag <code>updatingControls</code>: ตอน <code>showSelected</code> ตั้งค่า combo box เอง listener จะทำงานเหมือนผู้ใช้กดเปลี่ยน flag นี้ทำให้ <code>changeSettings</code> ไม่สนเคสนั้น</li>
+<li><code>showBatch</code> โชว์จำนวนตามจริง ("3 of 5") และเปิดปุ่ม Cancel เฉพาะตอนที่มีงานรันอยู่</li>
+</ul>
+<div class="why en"><b>Why does the controller never do heavy work itself?</b> Every handler runs on the FX thread. Decoding or tracing there would freeze the window, so it always asks the coordinator instead.</div>
+<div class="why th"><b>ทำไม controller ไม่ทำงานหนักเอง?</b> handler ทุกตัวรันบน FX thread ถ้า decode หรือ trace ตรงนั้นหน้าต่างจะค้าง เลยส่งให้ coordinator ทำแทนเสมอ</div>
+<div class="qa en"><b>Q: Why are settings per image?</b> Each <code>ImageDocument</code> keeps its own <code>VectorizationSettings</code>, so pressing Back/Next brings back that image's own settings and preview.</div>
+<div class="qa th"><b>ถาม: ทำไม settings แยกต่อรูป?</b> <code>ImageDocument</code> แต่ละตัวเก็บ <code>VectorizationSettings</code> ของตัวเอง พอกด Back/Next ก็จะได้ settings กับพรีวิวของรูปนั้นกลับมา</div>
+</div>
+
+<h2 class="en" style="font-size:20px">Model (shared data)</h2><h2 class="th" style="font-size:20px">Model (ข้อมูลที่ใช้ร่วมกัน)</h2>
+
+<div class="grid">
+<div class="card"><h3>AppSession.java</h3>
+<p class="en">The list of loaded <code>ImageDocument</code>s plus <code>selectedIndex</code>. It has <code>canBack/canNext/back/next</code>, and <code>back/next</code> throw if you go past either end. <code>documents()</code> returns a <b>copy</b> (<code>List.copyOf</code>) so nobody outside can change the list by accident.</p>
+<p class="th">รายการ <code>ImageDocument</code> ที่โหลดแล้ว + <code>selectedIndex</code> มี <code>canBack/canNext/back/next</code> ถ้าเลื่อนเลยหัวหรือท้าย <code>back/next</code> จะ throw ส่วน <code>documents()</code> คืน<b>สำเนา</b> (<code>List.copyOf</code>) คนข้างนอกจะได้แก้ list ไม่ได้โดยไม่ตั้งใจ</p>
+</div>
+<div class="card"><h3>ImageDocument.java</h3>
+<p class="en">One image: <code>source</code> path, <code>displayName</code>, <code>settings</code>, <code>status</code>, <code>svg</code>, <code>detectedColors</code>, <code>error</code>, <code>progress</code>, plus a <b><code>generation</code></b> counter. Calling <code>settings(new)</code> increments the generation and resets the status to QUEUED. <code>hasCurrentResult()</code> is true only if the SVG was made with the <i>current</i> settings.</p>
+<p class="th">รูปหนึ่งรูป: path <code>source</code>, <code>displayName</code>, <code>settings</code>, <code>status</code>, <code>svg</code>, <code>detectedColors</code>, <code>error</code>, <code>progress</code> และตัวนับ <b><code>generation</code></b> เรียก <code>settings(ใหม่)</code> เมื่อไหร่ generation จะเพิ่มขึ้นและสถานะกลับเป็น QUEUED ส่วน <code>hasCurrentResult()</code> จะเป็น true เฉพาะตอนที่ SVG ทำมาจาก settings <i>ปัจจุบัน</i></p>
+<div class="why en"><b>Why a generation?</b> If the user changes settings twice quickly, the first Task may finish last. Comparing generations means an outdated result never overwrites a newer one.</div>
+<div class="why th"><b>ทำไมต้องมี generation?</b> ถ้าผู้ใช้เปลี่ยน settings สองครั้งติดกัน Task ตัวแรกอาจเสร็จทีหลัง พอเทียบ generation ผลที่ล้าสมัยก็จะไม่ไปทับผลที่ใหม่กว่า</div>
+</div>
+<div class="card"><h3>VectorizationSettings.java <span class="own">record</span></h3>
+<p class="en">An immutable record: <code>detail</code>, <code>colorMode</code>, <code>customColors</code> (validated to be 2–5) and <code>removeBackground</code>. <code>defaults()</code> is Medium / Custom / 2 / false. The <code>withX()</code> methods return a new copy with one field changed.</p>
+<p class="th">record ที่แก้ไม่ได้ (immutable): <code>detail</code>, <code>colorMode</code>, <code>customColors</code> (ต้องอยู่ระหว่าง 2–5) และ <code>removeBackground</code> ส่วน <code>defaults()</code> = Medium / Custom / 2 / false และ method <code>withX()</code> จะคืนสำเนาใหม่ที่เปลี่ยนไปหนึ่งค่า</p>
+<div class="why en"><b>Why immutable?</b> A worker thread can read it safely while the user changes the UI, because nobody can modify an existing object. It also makes <code>equals()</code> free, which is how "is this result still current?" gets checked.</div>
+<div class="why th"><b>ทำไมต้อง immutable?</b> worker thread อ่านได้อย่างปลอดภัยแม้ผู้ใช้กำลังเปลี่ยน UI อยู่ เพราะไม่มีใครแก้ object เดิมได้ แถมได้ <code>equals()</code> มาฟรี ซึ่งใช้เช็กว่า "ผลนี้ยังเป็นของ settings ปัจจุบันไหม"</div>
+</div>
+<div class="card"><h3>DetailLevel / ColorMode / ProcessingStatus</h3>
+<p class="en"><code>DetailLevel</code> LOW/MEDIUM/HIGH maps to a resize cap (<code>maxDimension</code> 360/640/960px) and an autotrace <code>curveError</code> (0.5/0.25/0.1, where smaller means it follows edges more closely). <code>ColorMode</code> is UNLIMITED or CUSTOM. <code>ProcessingStatus</code> is QUEUED, RUNNING, READY, FAILED or CANCELLED.</p>
+<p class="th"><code>DetailLevel</code> LOW/MEDIUM/HIGH → ขนาดสูงสุดที่ย่อรูป (<code>maxDimension</code> 360/640/960px) + ค่า <code>curveError</code> ของ autotrace (0.5/0.25/0.1 ยิ่งน้อยยิ่งตามขอบละเอียด) ส่วน <code>ColorMode</code> = UNLIMITED หรือ CUSTOM และ <code>ProcessingStatus</code> = QUEUED, RUNNING, READY, FAILED, CANCELLED</p>
+<div class="why en"><b>Why enums?</b> Type-safe: you can't pass "medum" by mistake, and the combo boxes fill directly from <code>values()</code>.</div>
+<div class="why th"><b>ทำไมใช้ enum?</b> type-safe พิมพ์ผิดเป็น "medum" ไม่ได้ และ combo box ก็เติมค่าจาก <code>values()</code> ได้เลย</div>
+</div>
+</div>
+
+<div class="card"><h3>ConversionException.java <span class="own">Shared</span></h3><div class="path">se233/vectorize/exception/ConversionException.java</div>
+<p class="en">A <b>checked</b> exception (it extends <code>Exception</code>) with a <code>Kind</code>: INPUT, ZIP, ENGINE, SVG, OUTPUT or CANCELLED. Every service throws it with a message the user can read. The coordinator's <code>message()</code> shows that message as-is; any other exception becomes "Unexpected error: …".</p>
+<p class="th">exception แบบ <b>checked</b> (extends <code>Exception</code>) ที่มี <code>Kind</code>: INPUT, ZIP, ENGINE, SVG, OUTPUT, CANCELLED ทุก service จะ throw ตัวนี้พร้อมข้อความที่ผู้ใช้อ่านเข้าใจ <code>message()</code> ใน coordinator จะโชว์ข้อความนั้นตรง ๆ ส่วน exception แบบอื่นจะกลายเป็น "Unexpected error: …"</p>
+<div class="why en"><b>Why checked, and why a Kind?</b> Checked means the compiler forces callers to handle the failure. Kind lets the code tell "file is corrupt" apart from "autotrace missing" or "can't write the folder" without parsing message strings.</div>
+<div class="why th"><b>ทำไมเป็น checked และมี Kind?</b> checked = compiler บังคับให้คนเรียกต้องจัดการ error ส่วน Kind ช่วยแยกว่า "ไฟล์เสีย" ต่างจาก "ไม่มี autotrace" หรือ "เขียนโฟลเดอร์ไม่ได้" โดยไม่ต้องไปอ่านข้อความ</div>
+</div>
+
+<h2 class="en" style="font-size:20px">Concurrency (Backend)</h2><h2 class="th" style="font-size:20px">Concurrency (Backend)</h2>
+
+<div class="card"><h3>ProcessingCoordinator.java <span class="own">Day</span></h3><div class="path">se233/vectorize/concurrency/ProcessingCoordinator.java</div>
+<p class="en">The <b>bridge between the UI and the workers</b>. It has two executors:</p>
+<p class="th"><b>สะพานระหว่าง UI กับ worker</b> มี executor 2 ตัว:</p>
+<ul class="en">
+<li><code>workers</code>: a fixed pool of 2–4 threads (depending on the CPU) for jobs that may overlap.</li>
+<li><code>serial</code>: a single thread for jobs that must run one after another.</li>
+<li>Both use <b>daemon</b> threads, so they can never keep the app alive after the window closes.</li>
+</ul>
+<ul class="th">
+<li><code>workers</code>: pool ขนาดคงที่ 2–4 thread (ขึ้นกับ CPU) สำหรับงานที่รันซ้อนกันได้</li>
+<li><code>serial</code>: thread เดียว สำหรับงานที่ต้องรันทีละงาน</li>
+<li>ทั้งคู่เป็น thread แบบ <b>daemon</b> ปิดหน้าต่างแล้วแอปจะไม่ค้างอยู่เพราะ thread พวกนี้</li>
+</ul>
+<h4 class="en">Public methods</h4><h4 class="th">method public</h4>
+<ul class="en">
+<li><code>importAsync</code> / <code>runBackground</code>: wrap any <code>Callable</code> in a <code>Task</code> and deliver the success or error message back on FX.</li>
+<li><code>preprocess(docs)</code>: makes the first previews after an import, choosing the pool per image with <code>ProcessingPolicy</code>.</li>
+<li><code>refresh(doc)</code>: re-previews one image after a settings change.</li>
+<li><code>exportAll(docs, folder)</code>: one export Task per image, using snapshots.</li>
+<li><code>cancelActive()</code>: calls <code>task.cancel(true)</code> on every running Task.</li>
+<li><code>close()</code>: cancels everything and shuts down both pools (called from <code>VectorizeApplication.stop</code>).</li>
+</ul>
+<ul class="th">
+<li><code>importAsync</code> / <code>runBackground</code>: ห่อ <code>Callable</code> อะไรก็ได้ไว้ใน <code>Task</code> แล้วส่งผลหรือข้อความ error กลับมาบน FX</li>
+<li><code>preprocess(docs)</code>: ทำพรีวิวแรกหลัง import และเลือก pool ให้แต่ละรูปด้วย <code>ProcessingPolicy</code></li>
+<li><code>refresh(doc)</code>: ทำพรีวิวใหม่ของรูปเดียวหลังเปลี่ยน settings</li>
+<li><code>exportAll(docs, folder)</code>: export รูปละหนึ่ง Task โดยใช้ snapshot</li>
+<li><code>cancelActive()</code>: เรียก <code>task.cancel(true)</code> กับทุก Task ที่รันอยู่</li>
+<li><code>close()</code>: ยกเลิกทุกอย่างแล้วปิดทั้งสอง pool (เรียกจาก <code>VectorizeApplication.stop</code>)</li>
+</ul>
+<h4 class="en">Important details</h4><h4 class="th">รายละเอียดสำคัญ</h4>
+<ul class="en">
+<li><b>Snapshot before submitting</b>: the path, settings and generation are copied on FX, and the worker only uses those copies.</li>
+<li><code>previews</code> map: one preview Task per document. A new one cancels the old one.</li>
+<li><code>active</code> list: tracks running Tasks for Cancel. A state listener removes each Task when it finishes.</li>
+<li><code>Batch</code>: counters for completed, failed and cancelled jobs. It's only changed inside FX handlers, so no locks are needed. The <code>counted</code> flag makes sure each Task is counted once.</li>
+<li>One failed image <b>doesn't stop the others</b>: each Task has its own failure handler.</li>
+</ul>
+<ul class="th">
+<li><b>snapshot ก่อนส่งงาน</b>: path, settings, generation ถูกคัดลอกไว้บน FX แล้ว worker ใช้แค่สำเนาพวกนั้น</li>
+<li>map <code>previews</code>: หนึ่งรูปมีพรีวิว Task ได้ตัวเดียว ตัวใหม่มาจะยกเลิกตัวเก่า</li>
+<li>list <code>active</code>: เก็บ Task ที่รันอยู่ไว้ให้ปุ่ม Cancel ใช้ และมี listener ของ state คอยลบออกตอน Task จบ</li>
+<li><code>Batch</code>: ตัวนับงานที่เสร็จ/พัง/ยกเลิก แก้แค่ใน handler บน FX เลยไม่ต้องใช้ lock ส่วน flag <code>counted</code> กันไม่ให้นับ Task เดียวซ้ำ</li>
+<li>รูปหนึ่งพัง<b>ไม่ทำให้รูปอื่นหยุด</b> เพราะแต่ละ Task มี failure handler ของตัวเอง</li>
+</ul>
+<div class="qa en"><b>Q: How does Cancel actually stop autotrace?</b> <code>task.cancel(true)</code> → <code>isCancelled()</code> becomes true → that is the <code>BooleanSupplier cancelled</code> passed down → <code>AutoTraceVectorEngine</code> checks it every 100 ms and kills the process in <code>finally</code>.</div>
+<div class="qa th"><b>ถาม: กด Cancel แล้ว autotrace หยุดได้ยังไง?</b> <code>task.cancel(true)</code> → <code>isCancelled()</code> เป็น true → ค่านี้คือ <code>BooleanSupplier cancelled</code> ที่ส่งต่อลงไป → <code>AutoTraceVectorEngine</code> เช็กทุก 100 ms แล้ว kill process ใน <code>finally</code></div>
+</div>
+
+<div class="card"><h3>ProcessingPolicy.java <span class="own">Day</span></h3><div class="path">se233/vectorize/concurrency/ProcessingPolicy.java</div>
+<p class="en">The assignment's parallel rule, kept in <b>one place</b>. <code>isParallelCandidate(count, settings)</code> is true only when there is more than one image <b>and</b> the settings are Medium + Custom + 2 colors. <code>hasParallelPair(list)</code> is true when at least 2 images qualify, because overlapping needs at least two jobs.</p>
+<p class="th">กฎรันขนานตามโจทย์ เก็บไว้<b>ที่เดียว</b> <code>isParallelCandidate(count, settings)</code> เป็น true เฉพาะตอนที่มีมากกว่า 1 รูป <b>และ</b> settings = Medium + Custom + 2 สี ส่วน <code>hasParallelPair(list)</code> เป็น true ถ้ามีอย่างน้อย 2 รูปที่เข้าเงื่อนไข (เพราะการรันซ้อนต้องมีอย่างน้อยสองงาน)</p>
+<div class="why en"><b>Why a separate class?</b> It's a pure function with no threads, so it's trivial to unit-test (<code>ProcessingPolicyTest</code>). If the lecturer changes the rule, only this file changes.</div>
+<div class="why th"><b>ทำไมแยกคลาส?</b> เป็น pure function ไม่มี thread เลยเขียน unit test ง่ายมาก (<code>ProcessingPolicyTest</code>) และถ้าอาจารย์เปลี่ยนกฎ ก็แก้ไฟล์นี้ไฟล์เดียว</div>
+</div>
+
+<h2 class="en" style="font-size:20px">Import services</h2><h2 class="th" style="font-size:20px">Service สำหรับ Import</h2>
+
+<div class="grid">
+<div class="card"><h3>ImageImportService.java <span class="own">Day</span></h3>
+<p class="en"><code>importPaths(list)</code> handles each path in turn: a <code>.zip</code> goes to <code>zip.extract</code>, a .jpg/.jpeg/.png is checked with <code>validateImage</code>, and anything else is reported as "unsupported file type". Errors are collected per file instead of being thrown, so the others still import. <code>validateImage</code> really decodes the file with <code>ImageIO.read</code> (so a renamed .txt is rejected) and rejects images larger than 10000px.</p>
+<p class="th"><code>importPaths(list)</code> ไล่ทีละ path: <code>.zip</code> → ส่งให้ <code>zip.extract</code>, .jpg/.jpeg/.png → เช็กด้วย <code>validateImage</code>, อย่างอื่น → "unsupported file type" error จะเก็บแยกทีละไฟล์แทนที่จะ throw ไฟล์อื่นเลยยัง import ได้ ส่วน <code>validateImage</code> decode ไฟล์จริงด้วย <code>ImageIO.read</code> (ไฟล์ .txt ที่เปลี่ยนชื่อมาจะโดนปฏิเสธ) และไม่รับรูปที่ใหญ่เกิน 10000px</p>
+</div>
+<div class="card"><h3>ZipImportService.java <span class="own">Day</span></h3>
+<p class="en"><code>extract(zip)</code> creates a temporary folder and copies out only the supported image entries, naming them <code>0_name.png</code>, <code>1_name.png</code>, … so duplicate names can't clash. It blocks <b>Zip Slip</b>: an entry such as <code>../../evil.png</code>, <code>/abs</code> or <code>C:\…</code> is rejected. On error it deletes what it already extracted. An empty ZIP gives a clear error. <code>close()</code> deletes all of its temporary folders when the app exits.</p>
+<p class="th"><code>extract(zip)</code> สร้างโฟลเดอร์ชั่วคราว แล้วคัดลอกออกมาเฉพาะไฟล์รูปที่รองรับ ตั้งชื่อเป็น <code>0_name.png</code>, <code>1_name.png</code>, … ชื่อซ้ำจะได้ไม่ชนกัน กัน <b>Zip Slip</b>: entry อย่าง <code>../../evil.png</code>, <code>/abs</code> หรือ <code>C:\…</code> จะโดนปฏิเสธ ถ้าเจอ error จะลบไฟล์ที่แตกไปแล้วทิ้ง ZIP ว่างก็มี error ชัดเจน ส่วน <code>close()</code> ลบโฟลเดอร์ชั่วคราวทั้งหมดตอนปิดแอป</p>
+<div class="qa en"><b>Q: What is Zip Slip?</b> A ZIP entry name containing <code>../</code> can make a naive extractor write files outside the target folder. We normalize the path and check that it <code>startsWith(tempRoot)</code>.</div>
+<div class="qa th"><b>ถาม: Zip Slip คืออะไร?</b> ชื่อ entry ใน ZIP ที่มี <code>../</code> ทำให้ตัวแตกไฟล์ที่ไม่ระวังเขียนไฟล์ออกไปนอกโฟลเดอร์ปลายทางได้ เรา normalize path แล้วเช็กว่า <code>startsWith(tempRoot)</code></div>
+</div>
+</div>
+
+<h2 class="en" style="font-size:20px">Vectorization pipeline</h2><h2 class="th" style="font-size:20px">Pipeline แปลงเป็น vector</h2>
+
+<div class="card"><h3>VectorizationService.java <span class="own">Day</span></h3><div class="path">se233/vectorize/service/VectorizationService.java</div>
+<p class="en">The <b>pipeline conductor</b>. <code>convert(source, settings, cancelled, stage)</code>:</p>
+<p class="th"><b>ตัวคุม pipeline</b> <code>convert(source, settings, cancelled, stage)</code>:</p>
+<ol class="en">
+<li>Check cancel, then read the image (<code>ImageIO.read</code>) and compute its <code>sourceVersion</code> (file size + last-modified time).</li>
+<li><code>preprocessor.prepare(image, settings)</code></li>
+<li>Write the prepared image to a temporary PNG.</li>
+<li><code>engine.trace(tempPng, settings, ignoredColor, cancelled)</code></li>
+<li><code>validator.validate(svg)</code></li>
+<li>Return a <code>ConversionResult</code> (svg, detectedColors, sourceVersion, PIPELINE_VERSION). The temporary file is always deleted in <code>finally</code>.</li>
+</ol>
+<ol class="th">
+<li>เช็ก cancel → อ่านรูป (<code>ImageIO.read</code>) แล้วคำนวณ <code>sourceVersion</code> (ขนาดไฟล์ + เวลาแก้ไขล่าสุด)</li>
+<li><code>preprocessor.prepare(image, settings)</code></li>
+<li>เขียนรูปที่เตรียมแล้วเป็น PNG ชั่วคราว</li>
+<li><code>engine.trace(tempPng, settings, ignoredColor, cancelled)</code></li>
+<li><code>validator.validate(svg)</code></li>
+<li>คืน <code>ConversionResult</code> (svg, detectedColors, sourceVersion, PIPELINE_VERSION) และไฟล์ชั่วคราวจะถูกลบใน <code>finally</code> เสมอ</li>
+</ol>
+<p class="en"><code>stage.accept("Tracing vectors")</code> and similar calls report honest stage names. We don't invent fake percentages.</p>
+<p class="th"><code>stage.accept("Tracing vectors")</code> และอื่น ๆ บอกชื่อขั้นตอนตามจริง ไม่ได้มั่วเปอร์เซ็นต์ขึ้นมา</p>
+<div class="why en"><b>Why does it depend on the <code>VectorEngine</code> interface and not on AutoTrace?</b> It receives the engine in its constructor. Tests or a future engine can plug in without changing this file. It has no JavaFX and no CLI code, so it's pure logic.</div>
+<div class="why th"><b>ทำไมพึ่ง interface <code>VectorEngine</code> แทน AutoTrace ตรง ๆ?</b> รับ engine มาทาง constructor เทสต์หรือ engine ตัวใหม่ในอนาคตก็เสียบแทนได้โดยไม่ต้องแก้ไฟล์นี้ ไฟล์นี้ไม่มีโค้ด JavaFX หรือ CLI เลย เป็น logic ล้วน</div>
+</div>
+
+<div class="card"><h3>RasterPreprocessor.java <span class="own">Day</span></h3>
+<p class="en">Prepares the pixels before tracing. <code>prepare(image, settings)</code>:</p>
+<p class="th">เตรียมพิกเซลก่อน trace <code>prepare(image, settings)</code>:</p>
+<ol class="en">
+<li><b>Scale</b> the image so its longest side is at most <code>detail.maxDimension()</code> (bilinear smoothing also softens noise).</li>
+<li><b>Mask the background first</b> with <code>BackgroundRemovalService.mask</code>.</li>
+<li><b>Analyze colors</b> with <code>ColorAnalysisService.analyze</code>, skipping the masked pixels.</li>
+<li>In <b>Custom</b> mode only, snap every pixel to its <code>nearest</code> palette color. Unlimited keeps the original colors.</li>
+<li>Paint the background pixels with a color no foreground pixel uses (magenta-ish), and return it as <code>ignoredColor</code> so autotrace skips it. The result is a transparent background in the SVG.</li>
+</ol>
+<ol class="th">
+<li><b>ย่อรูป</b>ให้ด้านที่ยาวที่สุดไม่เกิน <code>detail.maxDimension()</code> (ย่อแบบ bilinear ช่วยลด noise ไปด้วย)</li>
+<li><b>ทำ mask พื้นหลังก่อน</b>ด้วย <code>BackgroundRemovalService.mask</code></li>
+<li><b>วิเคราะห์สี</b>ด้วย <code>ColorAnalysisService.analyze</code> โดยข้ามพิกเซลที่ถูก mask</li>
+<li>เฉพาะโหมด <b>Custom</b>: เปลี่ยนทุกพิกเซลเป็นสีใน palette ที่<code>ใกล้ที่สุด</code> ส่วน Unlimited ใช้สีเดิม</li>
+<li>ทาพิกเซลพื้นหลังด้วยสีที่ไม่มี foreground ใช้ (โทนม่วงชมพู) แล้วส่งค่าออกไปเป็น <code>ignoredColor</code> ให้ autotrace ข้ามสีนี้ ผลคือ SVG มีพื้นหลังโปร่งใส</li>
+</ol>
+<div class="why en"><b>Why mask before quantizing?</b> If you reduce to 2 colors first, a white background and a light-grey shape might merge into one color and the shape would be deleted along with the background.</div>
+<div class="why th"><b>ทำไม mask ก่อนลดสี?</b> ถ้าลดเหลือ 2 สีก่อน พื้นหลังสีขาวกับรูปทรงสีเทาอ่อนอาจรวมเป็นสีเดียวกัน แล้วรูปทรงก็จะโดนลบไปพร้อมพื้นหลัง</div>
+</div>
+
+<div class="grid">
+<div class="card"><h3>BackgroundRemovalService.java <span class="own">Day</span></h3>
+<p class="en"><code>mask(image, remove)</code> returns a <code>boolean[]</code> where true means "not foreground". Fully transparent PNG pixels are always masked. If removal is on, it:</p>
+<p class="th"><code>mask(image, remove)</code> คืน <code>boolean[]</code> โดย true = "ไม่ใช่ foreground" พิกเซล PNG ที่โปร่งใสทั้งหมดจะถูก mask เสมอ ถ้าเปิด Remove Background จะ:</p>
+<ol class="en">
+<li>Groups the border pixels into rough color buckets and picks the most common one.</li>
+<li>Gives up if that color covers less than 60% of the border, because it's probably a photo with no clear background.</li>
+<li>Runs a <b>flood fill (BFS)</b> from the border through similar neighbours (±24 per RGB channel).</li>
+</ol>
+<ol class="th">
+<li>จัดกลุ่มสีของพิกเซลที่ขอบรูปแบบคร่าว ๆ แล้วเลือกกลุ่มที่เจอบ่อยที่สุด</li>
+<li>ถ้าสีนั้นมีไม่ถึง 60% ของขอบ จะไม่ลบ (น่าจะเป็นรูปถ่ายที่ไม่มีพื้นหลังชัด ๆ)</li>
+<li>ทำ <b>flood fill (BFS)</b> จากขอบ ลามไปยังพิกเซลข้าง ๆ ที่สีใกล้กัน (ต่างกันไม่เกิน ±24 ต่อช่อง RGB)</li>
+</ol>
+<div class="why en"><b>Why flood fill and not "delete every white pixel"?</b> Only regions <b>connected to the edge</b> are removed, so white eyes inside a logo stay.</div>
+<div class="why th"><b>ทำไมใช้ flood fill แทน "ลบสีขาวทั้งหมด"?</b> ลบเฉพาะส่วนที่<b>ต่อกับขอบรูป</b> ตาสีขาวที่อยู่ในโลโก้เลยไม่โดนลบ</div>
+</div>
+<div class="card"><h3>ColorAnalysisService.java <span class="own">Day</span></h3>
+<p class="en"><code>analyze(image, excluded)</code> samples up to about 250k pixels, rounds each one into a 16-step color bin and counts them. The bins are sorted by count, with ties broken by RGB so the result is repeatable. <b>detectedColors</b> are the bins that hold at least 1% of the pixels, up to 10, which ignores JPEG noise.</p>
+<p class="th"><code>analyze(image, excluded)</code> สุ่มพิกเซลได้ถึงประมาณ 250k จุด ปัดแต่ละพิกเซลลงกลุ่มสีทีละ 16 ระดับแล้วนับจำนวน กลุ่มสีเรียงตามจำนวน ถ้าเท่ากันเรียงด้วยค่า RGB ผลเลยออกมาเหมือนเดิมทุกครั้ง ส่วน <b>detectedColors</b> = กลุ่มที่มีพิกเซลอย่างน้อย 1% (สูงสุด 10 สี) ซึ่งตัด noise ของ JPEG ทิ้ง</p>
+<p class="en"><code>Analysis.palette(n)</code> is <b>Median Cut</b>: repeatedly take the heaviest box, sort it along its widest RGB channel and cut it at the weighted median, until there are <i>n</i> boxes. Each box becomes its weighted average color.</p>
+<p class="th"><code>Analysis.palette(n)</code> = <b>Median Cut</b>: หยิบกล่องที่หนักที่สุด เรียงตามช่อง RGB ที่กว้างที่สุด แล้วตัดตรงค่ากลางถ่วงน้ำหนัก ทำซ้ำจนได้ <i>n</i> กล่อง แต่ละกล่องกลายเป็นสีเฉลี่ยถ่วงน้ำหนักของกล่องนั้น</p>
+</div>
+</div>
+
+<div class="card"><h3>VectorEngine.java + AutoTraceVectorEngine.java <span class="own">Day</span></h3><div class="path">se233/vectorize/adapter/</div>
+<p class="en"><code>VectorEngine</code> is a one-method interface: <code>trace(png, settings, ignoredColor, cancelled) → svg String</code>. <code>AutoTraceVectorEngine</code> implements it by running the external <b>autotrace</b> program:</p>
+<p class="th"><code>VectorEngine</code> = interface ที่มี method เดียว: <code>trace(png, settings, ignoredColor, cancelled) → svg String</code> ส่วน <code>AutoTraceVectorEngine</code> implement โดยรันโปรแกรม <b>autotrace</b> ภายนอก:</p>
+<ul class="en">
+<li>It builds the command as a <b>list of arguments</b> (never one shell string, so there's no command injection): <code>-output-format svg -error-threshold &lt;curveError&gt; [-background-color RRGGBB] -output-file out.svg in.png</code>.</li>
+<li>stderr goes to a file, so a full pipe can't freeze the process.</li>
+<li>It waits in 100 ms steps, checking <b>cancel</b> and a <b>60-second timeout</b>.</li>
+<li>It treats a non-zero exit code, an empty output, or an output with no <code>&lt;path</code> as an ENGINE error.</li>
+<li><code>finally</code>: kills the process if it's still alive and deletes the temporary files.</li>
+<li>It finds the program from <code>-Dvectorize.autotrace</code>, then the Homebrew paths, then PATH. A missing program gives a friendly "install it" message.</li>
+</ul>
+<ul class="th">
+<li>สร้างคำสั่งเป็น <b>list ของ argument</b> (ไม่ใช่ string ของ shell ก้อนเดียว เลยไม่โดน command injection): <code>-output-format svg -error-threshold &lt;curveError&gt; [-background-color RRGGBB] -output-file out.svg in.png</code></li>
+<li>stderr เขียนลงไฟล์ ถ้า pipe เต็มโปรแกรมก็ไม่ค้าง</li>
+<li>รอทีละ 100 ms คอยเช็ก <b>cancel</b> และ <b>timeout 60 วินาที</b></li>
+<li>exit code ไม่ใช่ 0, ได้ไฟล์ว่าง หรือไม่มี <code>&lt;path</code> → ถือเป็น error แบบ ENGINE</li>
+<li><code>finally</code>: kill process ถ้ายังไม่ตาย แล้วลบไฟล์ชั่วคราว</li>
+<li>หาโปรแกรมจาก <code>-Dvectorize.autotrace</code> → path ของ Homebrew → PATH ถ้าไม่เจอจะบอกให้ไปติดตั้ง</li>
+</ul>
+<div class="why en"><b>Why an interface?</b> It's the one real replaceable boundary in the project. Another tracer, or a fake one in tests, can be swapped in without touching the pipeline. That is the <b>Adapter</b> pattern.</div>
+<div class="why th"><b>ทำไมต้องมี interface?</b> นี่คือจุดเดียวในโปรเจกต์ที่ต้องเปลี่ยนตัวได้จริง จะใช้ tracer ตัวอื่นหรือตัวปลอมในเทสต์ก็สลับได้โดยไม่ต้องแตะ pipeline เรียกว่า pattern <b>Adapter</b></div>
+</div>
+
+<h2 class="en" style="font-size:20px">Output services</h2><h2 class="th" style="font-size:20px">Service สำหรับ Output</h2>
+
+<div class="grid">
+<div class="card"><h3>SvgValidationService.java <span class="own">Day</span></h3>
+<p class="en"><code>validate(svg)</code> is a safety gate used by both preview and export. It throws an SVG-kind error if:</p>
+<p class="th"><code>validate(svg)</code> = ด่านตรวจความปลอดภัย ใช้ทั้งตอนพรีวิวและ export จะ throw error แบบ SVG ถ้า:</p>
+<ul class="en">
+<li>the SVG is empty, or the XML is broken (the parser has DOCTYPE disabled, which blocks <b>XXE</b> attacks);</li>
+<li>the root isn't <code>&lt;svg&gt;</code> in the SVG namespace, or has no size or viewBox;</li>
+<li>it contains <code>&lt;image&gt;</code> (an embedded raster, so not a real vector), <code>&lt;script&gt;</code>, <code>foreignObject</code>, <code>iframe</code>, <code>object</code> or <code>embed</code>;</li>
+<li>it has an <code>on*</code> event attribute, an external <code>href</code>, or a <code>javascript:</code>/<code>data:</code> URL;</li>
+<li>it has zero real shapes.</li>
+</ul>
+<ul class="th">
+<li>SVG ว่าง หรือ XML พัง (ตัว parser ปิด DOCTYPE ไว้ กันการโจมตีแบบ <b>XXE</b>)</li>
+<li>root ไม่ใช่ <code>&lt;svg&gt;</code> ใน SVG namespace หรือไม่มีขนาด/viewBox</li>
+<li>มี <code>&lt;image&gt;</code> (ฝังรูป raster มา = ไม่ใช่ vector จริง), <code>&lt;script&gt;</code>, <code>foreignObject</code>, <code>iframe</code>, <code>object</code>, <code>embed</code></li>
+<li>มี attribute <code>on*</code>, <code>href</code> ที่ลิงก์ออกข้างนอก, หรือ URL แบบ <code>javascript:</code>/<code>data:</code></li>
+<li>ไม่มี shape จริงเลยสักอัน</li>
+</ul>
+</div>
+<div class="card"><h3>ExportService.java <span class="own">Day</span></h3>
+<p class="en"><code>exportOne(item, folder, cancelled, stage)</code> handles one image (the coordinator handles the batch):</p>
+<p class="th"><code>exportOne(item, folder, cancelled, stage)</code> จัดการรูปเดียว (coordinator เป็นคนจัดการทั้งชุด):</p>
+<ol class="en">
+<li>Checks the folder exists and is writable, otherwise it's an OUTPUT error.</li>
+<li>If the cached SVG's <code>sourceVersion</code> and <code>PIPELINE_VERSION</code> still match, it reuses the SVG. Otherwise it converts again, so a source file edited after the preview isn't exported stale.</li>
+<li>Validates again.</li>
+<li><code>reserve()</code> picks <code>name.svg</code>, <code>name-1.svg</code>, … under a <code>synchronized</code> lock, so two parallel jobs can't pick the same name.</li>
+<li>Writes a temp file, then <code>Files.move</code> <b>without</b> REPLACE_EXISTING, so it never overwrites. On failure the temp file is deleted.</li>
+</ol>
+<ol class="th">
+<li>เช็กว่าโฟลเดอร์มีอยู่และเขียนได้ ไม่งั้นเป็น error แบบ OUTPUT</li>
+<li>ถ้า <code>sourceVersion</code> กับ <code>PIPELINE_VERSION</code> ของ SVG ที่ cache ไว้ยังตรงกัน ก็ใช้อันเดิม ไม่งั้น convert ใหม่ (ไฟล์ต้นฉบับโดนแก้หลังทำพรีวิว ก็จะไม่ export ของเก่าออกไป)</li>
+<li>ตรวจ SVG อีกรอบ</li>
+<li><code>reserve()</code> เลือกชื่อ <code>name.svg</code>, <code>name-1.svg</code>, … ภายใต้ lock <code>synchronized</code> งานที่รันขนานกันสองงานจะได้ไม่เลือกชื่อเดียวกัน</li>
+<li>เขียนไฟล์ temp แล้วค่อย <code>Files.move</code> <b>ไม่ใส่</b> REPLACE_EXISTING เลยไม่เขียนทับไฟล์เดิม ถ้าพังก็ลบไฟล์ temp ทิ้ง</li>
+</ol>
+<div class="qa en"><b>Q: Why is there a <code>synchronized</code> here when the rest has no locks?</b> <code>exportOne</code> runs on several worker threads at the same time, and they all share the <code>reserved</code> set.</div>
+<div class="qa th"><b>ถาม: ทำไมตรงนี้มี <code>synchronized</code> ทั้งที่ที่อื่นไม่มี lock?</b> <code>exportOne</code> รันบนหลาย worker thread พร้อมกัน และทุกตัวใช้ set <code>reserved</code> ร่วมกัน</div>
+</div>
+</div>
+
+<div class="card"><h3>PresetService.java <span class="own">Mona</span></h3>
+<p class="en">An extra feature: save and load the current settings as a <code>.properties</code> file. <code>save</code> writes a temp file next to the target, then does an <b>atomic move</b>, so a crash can't leave a half-written preset. <code>load</code> validates every field (a known enum value, a count of 2–5, true or false) and throws an <code>IOException</code> with a user-friendly message. The controller calls it through <code>coordinator.runBackground</code> so the file I/O stays off FX.</p>
+<p class="th">ฟีเจอร์เสริม: เซฟ/โหลด settings ปัจจุบันเป็นไฟล์ <code>.properties</code> ตอน <code>save</code> จะเขียนไฟล์ temp ไว้ข้าง ๆ ไฟล์ปลายทางก่อนแล้วทำ <b>atomic move</b> ถ้าแอปพังกลางทางก็ไม่เหลือไฟล์ preset ครึ่ง ๆ กลาง ๆ ส่วน <code>load</code> เช็กทุกช่อง (ต้องเป็นค่า enum ที่มีจริง, จำนวนสี 2–5, true/false) แล้ว throw <code>IOException</code> พร้อมข้อความที่อ่านเข้าใจ controller เรียกผ่าน <code>coordinator.runBackground</code> งานอ่าน/เขียนไฟล์เลยไม่ไปอยู่บน FX</p>
+</div>
+
+<h2 class="en" style="font-size:20px">Tests (src/test)</h2><h2 class="th" style="font-size:20px">เทสต์ (src/test)</h2>
+<div class="card">
+<table>
+<tr><th>File</th><th class="en">What it proves</th><th class="th">พิสูจน์อะไร</th></tr>
+<tr><td>ProcessingPolicyTest</td><td class="en">The Medium/Custom/2 parallel rule and its boundary; settings stay within 2–5.</td><td class="th">กฎรันขนาน Medium/Custom/2 และขอบเขตของกฎ, settings อยู่ในช่วง 2–5</td></tr>
+<tr><td>ColorAnalysisServiceTest</td><td class="en">Detects 3 colors; the palette size is bounded; same image gives the same palette; fully masked image gives an empty palette.</td><td class="th">เจอ 3 สีถูกต้อง, ขนาด palette มีขอบเขต, รูปเดิมได้ palette เดิม, รูปที่ mask หมดได้ palette ว่าง</td></tr>
+<tr><td>BackgroundRemovalServiceTest</td><td class="en">Removes a plain background but keeps the shape.</td><td class="th">ลบพื้นหลังสีเรียบแต่เก็บรูปทรงไว้</td></tr>
+<tr><td>VectorPipelineTest</td><td class="en">Real autotrace gives paths for JPG and transparent PNG; detail changes the output; a missing executable gives a safe error; a raster-wrapped SVG is rejected.</td><td class="th">autotrace จริงได้ path ทั้ง JPG และ PNG โปร่งใส, detail ทำให้ผลเปลี่ยน, ไม่มีโปรแกรมก็ได้ error ที่ปลอดภัย, SVG ที่ฝัง raster โดนปฏิเสธ</td></tr>
+<tr><td>ImportAndZipTest</td><td class="en">Good images survive a corrupt sibling; traversal, empty and corrupt ZIPs are rejected.</td><td class="th">รูปดีรอดแม้มีไฟล์เสียปน, ZIP แบบ traversal / ว่าง / เสีย โดนปฏิเสธ</td></tr>
+<tr><td>ExportAndPresetTest / ExportIntegrationTest</td><td class="en">No overwrite; a changed source invalidates the cache; presets round-trip; an unwritable folder fails per file; the output opens in a real SVG viewer.</td><td class="th">ไม่เขียนทับ, ไฟล์ต้นฉบับเปลี่ยนแล้ว cache ใช้ไม่ได้, preset เซฟแล้วโหลดกลับได้เหมือนเดิม, โฟลเดอร์ที่เขียนไม่ได้พังเป็นรายไฟล์, ไฟล์ที่ได้เปิดใน SVG viewer จริงได้</td></tr>
+<tr><td>BatchFailureTest / ParallelExportTest</td><td class="en">One failure doesn't kill the others; default batch jobs really overlap.</td><td class="th">งานหนึ่งพังไม่ลากงานอื่นพังตาม, batch ที่ใช้ค่า default รันซ้อนกันจริง</td></tr>
+<tr><td>UiFlowTest / UiSnapshotTest</td><td class="en">Multi-drop uses parallel previews and keeps per-image settings; the editor has only 3 top actions and renders the SVG.</td><td class="th">ลากหลายรูปแล้วพรีวิวรันขนาน และ settings ต่อรูปยังอยู่, หน้า editor มีแค่ 3 ปุ่มด้านบนและแสดง SVG ได้</td></tr>
+<tr><td>FxTestSupport / JUnitTestSuite</td><td class="en">A helper that starts JavaFX once for the UI tests, and a suite that runs every test.</td><td class="th">ตัวช่วยเปิด JavaFX ครั้งเดียวให้เทสต์ UI, และ suite ที่รันเทสต์ทั้งหมด</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3 class="en">🎤 Quick answers for the demo</h3><h3 class="th">🎤 คำตอบสั้น ๆ ไว้ใช้ตอน demo</h3>
+<ul class="en">
+<li><b>Why doesn't the UI freeze?</b> Every heavy step runs inside a JavaFX <code>Task</code> on an <code>ExecutorService</code>, and the results come back through <code>setOnSucceeded</code> on the FX thread.</li>
+<li><b>How is it "real" vector?</b> autotrace traces the outlines into <code>&lt;path&gt;</code>s, and <code>SvgValidationService</code> rejects any SVG that just wraps a bitmap with <code>&lt;image&gt;</code>.</li>
+<li><b>How is the background made transparent?</b> Flood-fill a mask from the edges, paint it a unique color, and tell autotrace to ignore that color, so no background shape is created.</li>
+<li><b>How are custom colors limited to 2–5?</b> A Median Cut palette, then every pixel is snapped to its nearest palette color before tracing.</li>
+<li><b>What if one file is bad?</b> Each file is its own try/catch or its own Task. Errors are collected and the rest continue.</li>
+<li><b>When does it run in parallel?</b> Only when <code>ProcessingPolicy</code> says so (more than one image, Medium, Custom, 2 colors). Otherwise jobs go through the single <code>serial</code> thread.</li>
+</ul>
+<ul class="th">
+<li><b>ทำไม UI ไม่ค้าง?</b> งานหนักทุกขั้นรันใน JavaFX <code>Task</code> บน <code>ExecutorService</code> แล้วผลส่งกลับมาผ่าน <code>setOnSucceeded</code> บน FX thread</li>
+<li><b>ทำไมถึงเป็น vector "จริง"?</b> autotrace ลากเส้นขอบออกมาเป็น <code>&lt;path&gt;</code> และ <code>SvgValidationService</code> ไม่รับ SVG ที่แค่เอา bitmap มาห่อด้วย <code>&lt;image&gt;</code></li>
+<li><b>ทำพื้นหลังให้โปร่งใสยังไง?</b> flood fill ทำ mask จากขอบรูป → ทาด้วยสีที่ไม่ซ้ำใคร → บอก autotrace ให้ข้ามสีนั้น เลยไม่มี shape ของพื้นหลังเกิดขึ้น</li>
+<li><b>จำกัดสี 2–5 สียังไง?</b> ใช้ palette แบบ Median Cut แล้วเปลี่ยนทุกพิกเซลเป็นสีใน palette ที่ใกล้ที่สุดก่อน trace</li>
+<li><b>ถ้ามีไฟล์เสียไฟล์หนึ่ง?</b> แต่ละไฟล์มี try/catch หรือ Task ของตัวเอง error ถูกเก็บไว้ และไฟล์ที่เหลือทำงานต่อได้</li>
+<li><b>รันขนานตอนไหน?</b> เฉพาะตอนที่ <code>ProcessingPolicy</code> อนุญาต (มากกว่า 1 รูป, Medium, Custom, 2 สี) นอกนั้นไปเข้าคิวที่ thread <code>serial</code> ตัวเดียว</li>
+</ul>
+</div>
+
+</section>

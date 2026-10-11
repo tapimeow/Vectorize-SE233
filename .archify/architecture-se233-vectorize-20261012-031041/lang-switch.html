@@ -1,10 +1,12 @@
 <style>
-#lang-switch{position:fixed;top:12px;right:12px;z-index:9999;display:flex;border:1px solid #8884;border-radius:8px;overflow:hidden;font:600 13px system-ui,sans-serif;background:#fff;box-shadow:0 2px 8px #0002}
+#lang-switch{position:fixed;bottom:16px;right:16px;z-index:9999;display:flex;border:1px solid #8884;border-radius:8px;overflow:hidden;font:600 13px system-ui,sans-serif;background:#fff;box-shadow:0 2px 8px #0002}
 #lang-switch button{border:0;padding:6px 12px;cursor:pointer;background:transparent;color:#334}
 #lang-switch button[aria-pressed="true"]{background:#2563eb;color:#fff}
 @media (prefers-color-scheme:dark){#lang-switch{background:#1e2230}#lang-switch button{color:#cdd}}
+html:has(#node-panel.open) #lang-switch{right:min(476px,calc(100vw - 230px))}
+@media (max-width:520px){html:has(#node-panel.open) #lang-switch{display:none}}
 </style>
-<div id="lang-switch" role="group" aria-label="Language"><button data-lang="en">EN</button><button data-lang="th">ไทย</button></div>
+<div id="lang-switch" role="group" aria-label="Language"><button data-lang="en">EN</button><button data-lang="th">ไทย</button><a href="#file-guide" style="padding:6px 12px;color:inherit;text-decoration:none;border-left:1px solid #8884">📘 Guide</a></div>
 <script>
 (function(){
   var TH = {
@@ -84,7 +86,7 @@
   function walk(root){
     var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {acceptNode:function(n){
       var p = n.parentNode && n.parentNode.nodeName.toLowerCase();
-      return (p==='script'||p==='style') || (n.parentNode && n.parentNode.closest && n.parentNode.closest('#lang-switch')) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+      return (p==='script'||p==='style') || (n.parentNode && n.parentNode.closest && n.parentNode.closest('#lang-switch, #file-guide, #node-panel, #np-tip')) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
     }});
     var n; while ((n = w.nextNode())) {
       if (!orig.has(n)) orig.set(n, n.nodeValue);
