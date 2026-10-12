@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vectorize Demo Script</title>
+<style>
+:root{
+  --bg:#FAFAF9; --surface:#FFFFFF; --surface2:#F5F5F4; --text:#1C1917; --muted:#57534E; --faint:#8A817C; --line:#E7E5E4;
+  --mona:#0F766E; --mona-bg:#E3F3EF; --day:#C2410C; --day-bg:#FDEBDF; --both:#4338CA; --both-bg:#ECEEFC;
+  --code:#9A3412; --code-bg:#F3EEEA; --accent:#2563EB; --ok:#15803D; --bad:#B91C1C; --shadow:0 1px 2px rgb(0 0 0/.06),0 4px 16px rgb(0 0 0/.05);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E0C0B; --surface:#1A1715; --surface2:#24201E; --text:#F2EFEC; --muted:#B4ABA5; --faint:#857B75; --line:#35302C;
+    --mona:#5EEAD4; --mona-bg:#0E2B27; --day:#FDBA74; --day-bg:#34200F; --both:#A5B4FC; --both-bg:#1D1C45;
+    --code:#FDBA74; --code-bg:#2A2421; --accent:#60A5FA; --ok:#4ADE80; --bad:#F87171; --shadow:none; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E0C0B; --surface:#1A1715; --surface2:#24201E; --text:#F2EFEC; --muted:#B4ABA5; --faint:#857B75; --line:#35302C;
+  --mona:#5EEAD4; --mona-bg:#0E2B27; --day:#FDBA74; --day-bg:#34200F; --both:#A5B4FC; --both-bg:#1D1C45;
+  --code:#FDBA74; --code-bg:#2A2421; --accent:#60A5FA; --ok:#4ADE80; --bad:#F87171; --shadow:none; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:150px}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,"Noto Sans Thai",sans-serif;-webkit-font-smoothing:antialiased}
+code,.mono{font:0.86em/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+code{color:var(--code);background:var(--code-bg);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--accent)}
+.wrap{max-width:1040px;margin:0 auto;padding:0 16px}
+
+/* ---------- top bar ---------- */
+.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:10px 0}
+.brand{font-weight:700;font-size:17px;margin-right:auto;white-space:nowrap}
+.brand small{display:block;font-weight:500;font-size:12px;color:var(--muted)}
+.seg-ctl{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--surface);gap:2px}
+.seg-ctl button{border:0;background:transparent;padding:6px 14px;border-radius:999px;font-weight:600;font-size:14px;color:var(--muted)}
+.seg-ctl button[aria-pressed="true"]{color:#fff;background:var(--text)}
+.seg-ctl button[data-who="mona"][aria-pressed="true"]{background:var(--mona);color:var(--surface)}
+.seg-ctl button[data-who="day"][aria-pressed="true"]{background:var(--day);color:var(--surface)}
+.seg-ctl button[data-who="all"][aria-pressed="true"]{background:var(--text);color:var(--bg)}
+.timer{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 4px 3px 12px}
+.timer .clock{font:600 15px ui-monospace,SFMono-Regular,Menlo,monospace;min-width:52px;text-align:right}
+.timer.over .clock{color:var(--bad)}
+.icon-btn{border:0;background:var(--surface2);border-radius:999px;width:30px;height:30px;display:inline-grid;place-items:center;font-size:13px}
+.icon-btn:hover{background:var(--line)}
+.ghost{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:14px;font-weight:600}
+.ghost[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.tabs button{border:0;background:transparent;padding:8px 12px;font-weight:600;font-size:14px;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--text);border-bottom-color:var(--text)}
+.nowline{height:3px;background:var(--line);position:relative}
+.nowline i{position:absolute;inset:0 auto 0 0;width:0;background:var(--accent);transition:width .3s linear}
+.nowtxt{font-size:13px;color:var(--muted);padding:0 0 8px;min-height:20px}
+.nowtxt b{color:var(--text)}
+
+/* ---------- common ---------- */
+main{padding:22px 0 120px}
+section[hidden]{display:none}
+h2.sec{font-size:22px;margin:28px 0 10px}
+.lead{color:var(--muted);margin:0 0 14px}
+.badge{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 9px;border-radius:999px}
+.badge.mona{color:var(--mona);background:var(--mona-bg)} .badge.day{color:var(--day);background:var(--day-bg)} .badge.both{color:var(--both);background:var(--both-bg)}
+.chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 10px;font-size:13px;font-weight:600;color:var(--muted)}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip svg{width:13px;height:13px}
+details.box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px 16px;margin:0 0 14px;box-shadow:var(--shadow)}
+details.box summary{cursor:pointer;font-weight:700;padding:10px 0}
+details.box ul{margin:0 0 12px;padding-left:20px} details.box li{margin:5px 0}
+
+/* ---------- timeline strip ---------- */
+.strip{display:flex;height:34px;border-radius:10px;overflow:hidden;border:1px solid var(--line);margin:4px 0 6px}
+.strip button{border:0;border-right:1px solid var(--bg);font-size:12px;font-weight:700;padding:0;min-width:0;overflow:hidden}
+.strip button:last-child{border-right:0}
+.strip .mona{background:var(--mona-bg);color:var(--mona)} .strip .day{background:var(--day-bg);color:var(--day)} .strip .both{background:var(--both-bg);color:var(--both)}
+.strip button.now{outline:2px solid var(--accent);outline-offset:-2px}
+.strip button.dim{opacity:.3}
+.strip-legend{display:flex;justify-content:space-between;font:12px ui-monospace,Menlo,monospace;color:var(--faint);margin-bottom:18px}
+
+/* ---------- segment cards ---------- */
+.seg{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--who);border-radius:14px;margin:0 0 16px;box-shadow:var(--shadow);transition:opacity .2s,transform .2s}
+.seg.mona{--who:var(--mona);--whobg:var(--mona-bg)} .seg.day{--who:var(--day);--whobg:var(--day-bg)} .seg.both{--who:var(--both);--whobg:var(--both-bg)}
+.seg-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:14px 18px 10px}
+.seg-head .t{font:600 13px ui-monospace,Menlo,monospace;color:var(--faint)}
+.seg-head h3{margin:0;font-size:18px;flex:1 1 260px}
+.rub{width:100%;font-size:13px;color:var(--who);font-weight:600}
+.rows{padding:0 18px 6px}
+.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.9fr);gap:16px;padding:12px 0;border-top:1px dashed var(--line)}
+.do{font-size:14px;color:var(--muted)}
+.lbl{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--faint);margin-bottom:2px}
+.say{font-size:17.5px;line-height:1.6}
+.say .lbl{color:var(--who)}
+.row .who-tag{margin-bottom:4px}
+.seg-foot{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 18px 14px;border-top:1px solid var(--line);font-size:13px;color:var(--faint)}
+.seg.now{outline:3px solid var(--accent);outline-offset:2px}
+.seg-left{font:600 12px ui-monospace,Menlo,monospace;color:var(--accent);margin-left:auto}
+.wait{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;border:1px dashed var(--line);border-radius:14px;padding:12px 16px;margin:0 0 16px;color:var(--muted);background:var(--surface2)}
+.wait.now{outline:3px solid var(--accent);outline-offset:2px}
+.wait .cue{flex-basis:100%;font-size:14.5px}
+.wait .cue b{color:var(--text)}
+.wait button{margin-left:auto}
+body.focus .seg:not(.now),body.focus .wait:not(.now){opacity:.32}
+body.focus .say{font-size:21px}
+body.focus .seg.now{transform:scale(1.005)}
+
+/* ---------- tables & Q&A ---------- */
+.search{width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--text);font-size:15px;margin:4px 0 6px}
+.qa{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--who);border-radius:12px;padding:12px 16px;margin:0 0 10px;box-shadow:var(--shadow)}
+.qa.mona{--who:var(--mona)} .qa.day{--who:var(--day)} .qa.both{--who:var(--both)}
+.qa-q{font-weight:700;font-size:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.where{display:block;margin:6px 0;cursor:copy;text-align:left;border:0;background:none;padding:0}
+.where code{font-size:13.5px}
+.qa-a{margin:4px 0 6px}
+.qa .links{display:flex;flex-wrap:wrap;gap:6px}
+.empty{color:var(--faint);padding:20px 0;text-align:center}
+.tbl{width:100%;border-collapse:separate;border-spacing:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:14.5px}
+.tbl th,.tbl td{padding:10px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+.tbl tr:last-child td{border-bottom:0}
+.tbl th{background:var(--surface2);font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.tbl tr.done td{opacity:.55}
+.tbl input{width:18px;height:18px;accent-color:var(--ok)}
+.score{font-weight:700;margin:6px 0 12px}
+.score b{color:var(--ok)}
+.tbl-wrap{overflow-x:auto}
+
+/* ---------- file map ---------- */
+.flows{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 18px}
+.layer{margin:18px 0 6px;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.node{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--who,var(--faint));border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow)}
+.node.mona{--who:var(--mona)} .node.day{--who:var(--day)}
+.node h4{margin:0;font-size:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.node .path{font:12px ui-monospace,Menlo,monospace;color:var(--faint);overflow-wrap:anywhere}
+.node p{margin:0;font-size:14.5px}
+.node .chip{align-self:flex-start;margin-top:auto}
+.cfg{margin-top:28px;font-size:13.5px;color:var(--muted)}
+.cfg input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:13px ui-monospace,Menlo,monospace;margin-top:4px}
+
+/* ---------- drawer ---------- */
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(820px,100vw);background:var(--surface);border-left:1px solid var(--line);box-shadow:-12px 0 40px rgb(0 0 0/.18);z-index:50;display:flex;flex-direction:column;transform:translateX(102%);transition:transform .25s ease}
+.drawer.open{transform:none}
+.drawer header{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.drawer header h3{margin:0;font-size:15px;flex:1;min-width:0}
+.drawer header h3 small{display:block;font-weight:400;color:var(--muted);font-size:12.5px}
+.drawer iframe{flex:1;border:0;width:100%;background:var(--bg)}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);padding:8px 14px;border-radius:999px;font-size:14px;opacity:0;transition:.2s;z-index:60;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.keys{font-size:12.5px;color:var(--faint);margin-top:30px}
+kbd{font:12px ui-monospace,Menlo,monospace;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--surface)}
+
+@media (max-width:700px){
+  .row{grid-template-columns:1fr;gap:6px}
+  .say{font-size:16.5px}
+  .brand{width:100%}
+  .tbl{font-size:13.5px}
+}
+@media print{.top,.drawer,.strip,.strip-legend,.seg-foot .chip,.keys{display:none} .seg,.qa{break-inside:avoid;box-shadow:none} section[hidden]{display:block}}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="wrap">
+    <div class="bar">
+      <div class="brand">Vectorize · Demo Script<small>SE233 Term Project I · Onsite demo, 14 Oct 2026</small></div>
+      <div class="seg-ctl" role="group" aria-label="Whose part to show">
+        <button data-who="all" aria-pressed="true" title="Show both speakers (B)">Both</button>
+        <button data-who="mona" aria-pressed="false" title="Only Mona's lines (M)">Mona</button>
+        <button data-who="day" aria-pressed="false" title="Only Day's lines (D)">Day</button>
+      </div>
+      <div class="timer" id="timer" title="7-minute timer (S start/pause, R reset)">
+        <span class="clock" id="clock">7:00</span>
+        <button class="icon-btn" id="tPlay" aria-label="Start timer">▶</button>
+        <button class="icon-btn" id="tReset" aria-label="Reset timer">↺</button>
+      </div>
+      <button class="ghost" id="focusBtn" aria-pressed="false" title="Dim everything except the current segment (F)">Focus</button>
+      <button class="icon-btn" id="themeBtn" aria-label="Switch theme" title="Theme">◐</button>
+    </div>
+    <div class="nowtxt" id="nowtxt"></div>
+    <div class="tabs" role="tablist">
+      <button role="tab" data-tab="demo" aria-selected="true">Demo script</button>
+      <button role="tab" data-tab="qa" aria-selected="false">Q&amp;A cheat sheet</button>
+      <button role="tab" data-tab="rubric" aria-selected="false">Rubric checklist</button>
+      <button role="tab" data-tab="map" aria-selected="false">File map</button>
+    </div>
+  </div>
+  <div class="nowline"><i id="nowbar"></i></div>
+</div>
+
+<main class="wrap">
+  <section id="tab-demo">
+    <p class="lead" id="intro"></p>
+    <details class="box" id="setup"><summary>Before you walk in · setup checklist</summary><ul></ul></details>
+    <div class="strip" id="strip" aria-label="Timeline"></div>
+    <div class="strip-legend"><span>0:00</span><span>3:30</span><span>7:00</span></div>
+    <div id="segments"></div>
+    <details class="box" id="fallback" open><summary>If something goes wrong</summary><ul></ul></details>
+    <p class="keys"><kbd>B</kbd> <kbd>M</kbd> <kbd>D</kbd> both / Mona / Day · <kbd>←</kbd> <kbd>→</kbd> previous / next segment · <kbd>F</kbd> focus · <kbd>S</kbd> start/pause timer · <kbd>R</kbd> reset · <kbd>1</kbd>–<kbd>4</kbd> tabs · <kbd>Esc</kbd> close diagram</p>
+  </section>
+
+  <section id="tab-qa" hidden>
+    <p class="lead" id="qaIntro"></p>
+    <p class="lead">Click a <code>File:line</code> to copy it, then press <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd> in IntelliJ and paste to jump straight to that line. The diagram button shows where the file sits in the architecture.</p>
+    <input class="search" id="search" type="search" placeholder="Search questions, files or answers…  (e.g. zip, Task, zoom)">
+    <div id="qaList"></div>
+  </section>
+
+  <section id="tab-rubric" hidden>
+    <p class="lead" id="rubricIntro"></p>
+    <div class="score" id="score"></div>
+    <div class="tbl-wrap"><table class="tbl" id="rubricTbl"><thead><tr><th></th><th>Rubric row</th><th>Pts</th><th>Shown by</th><th>What the lecturer sees</th><th>Proof in code</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <section id="tab-map" hidden>
+    <h2 class="sec" style="margin-top:6px">How the files connect</h2>
+    <p class="lead">Each card is one box in the architecture diagram. <b>Show in diagram</b> opens the diagram beside this page with that box highlighted; click the box there to read what it does, who calls it and what it calls. Colours: <span class="badge mona">Mona</span> frontend, <span class="badge day">Day</span> backend.</p>
+    <div class="flows">
+      <button class="ghost" data-open-diagram="">Open the whole diagram</button>
+      <button class="ghost" data-route="controller~zip">Trace: import (controller → ZIP)</button>
+      <button class="ghost" data-route="controller~autotrace">Trace: preview (controller → autotrace)</button>
+      <button class="ghost" data-route="controller~outdir">Trace: export (controller → output folder)</button>
+      <a class="ghost" id="newTab" href="#" target="_blank" rel="noopener" style="text-decoration:none">Open diagram in new tab ↗</a>
+    </div>
+    <div id="map"></div>
+    <p class="cfg">Note: the diagram was generated at commit 7679ef3, before New Batch was added, so its explanations don't mention <code>newBatch</code>, <code>sameBatch</code> or <code>resetEditor</code> yet.</p>
+    <label class="cfg" style="display:block">Diagram file path (relative to this page, normally <code>../../.archify/…</code>). Only change it if the diagram moves.
+      <input id="diagPath">
+    </label>
+  </section>
+</main>
+
+<aside class="drawer" id="drawer" aria-label="Architecture diagram" aria-hidden="true">
+  <header>
+    <h3 id="drawerTitle">Architecture<small>Click the highlighted box to read what it does</small></h3>
+    <a class="ghost" id="drawerTab" href="#" target="_blank" rel="noopener" style="text-decoration:none">New tab ↗</a>
+    <button class="icon-btn" id="drawerClose" aria-label="Close diagram">✕</button>
+  </header>
+  <iframe id="frame" title="SE233 Vectorize architecture diagram"></iframe>
+</aside>
+<div class="toast" id="toast"></div>
+
+<script>
+const DATA = {"setup": ["AutoTrace installed and on PATH: `which autotrace` should print `/opt/homebrew/bin/autotrace`.", "Start the app once with `./mvnw javafx:run` and leave it on the drop screen. Maximise the window so both previews are big.", "Make a `demo-files` folder on the Desktop with: `logo.png` (flat colours on a plain background, good for Remove Background), `photo.jpg`, `transparent.png`, `images.zip` (3 to 4 JPG/PNG inside), `broken.jpg` (a text file renamed to .jpg) and `notes.txt`.", "Make an empty `export-out` folder for Export All.", "In IntelliJ, open these tabs in this order: `VectorizeView`, `VectorizeController`, `ProcessingCoordinator`, `ProcessingPolicy`, `ZipImportService`, `VectorizationService`. Turn on line numbers. Hide the Project panel until segment 11 (code map).", "IntelliJ shortcuts (Mac): `Cmd+O` go to class · `Cmd+F12` methods in this file · `Cmd+L` go to line · `Cmd+B` jump to definition · `Cmd+Shift+F` search everywhere.", "Rehearse once with a timer. AutoTrace takes a few seconds per image, so keep talking while a preview is “pending”."], "timeline": [{"time": "0:00 – 0:20", "who": "day", "what": "Intro and team split", "rubric": "n/a"}, {"time": "0:20 – 1:05", "who": "mona", "what": "Drop zone and editor layout", "rubric": "UX/UI"}, {"time": "1:05 – 1:40", "who": "mona", "what": "Zoom and Back/Next", "rubric": "UI Navigation & View (2)"}, {"time": "1:40 – 2:40", "who": "mona", "what": "Detail, Colors, Remove Background, instant preview", "rubric": "Details & BG (2), Colors (3)"}, {"time": "2:40 – 3:10", "who": "mona", "what": "Additional feature 1: presets", "rubric": "Additional feature (1)"}, {"time": "3:10 – 3:40", "who": "day", "what": "ZIP import", "rubric": "Zip Handling (1)"}, {"time": "3:40 – 4:20", "who": "day", "what": "Parallel preprocessing with progress", "rubric": "Preprocessing (2)"}, {"time": "4:20 – 4:45", "who": "day", "what": "How the vectorization works", "rubric": "Vectorization Format (1)"}, {"time": "4:45 – 5:35", "who": "day", "what": "Export All in parallel, open the SVG", "rubric": "Export (2)"}, {"time": "5:35 – 6:05", "who": "day", "what": "Error handling + additional feature 2: New Batch", "rubric": "NFR: graceful errors; Additional feature"}, {"time": "6:05 – 6:45", "who": "both", "what": "Code map in IntelliJ", "rubric": "Shows we know the code"}, {"time": "6:45 – 7:00", "who": "mona", "what": "Wrap-up, invite questions", "rubric": "n/a"}], "segments": [{"start": 0, "end": 20, "time": "0:00 – 0:20", "who": "day", "n": 1, "title": "Intro", "rubric": "", "rows": [{"do": "App open on the drop screen. Both standing where the lecturers can see the screen.", "say": "“Good morning. We are Day and Mona, and this is Vectorize, a JavaFX desktop app that batch-converts JPG, PNG or a ZIP of images into real vector SVG using AutoTrace. Mona built the frontend: the screens and all the event handling. I built the backend: import, the vectorization pipeline, concurrency and export. Mona will start with the interface.”", "who": null}], "nodes": ["app"]}, {"start": 20, "end": 65, "time": "0:20 – 1:05", "who": "mona", "n": 2, "title": "Drop zone and editor layout", "rubric": "UX and UI; drop zone requirement", "rows": [{"do": "Point at the drop card.", "say": "“This is the drop zone. You can drop a single image, several JPG or PNG files, or a ZIP. There is also a Choose files button if you prefer a file dialog.”", "who": null}, {"do": "From Finder, drag `logo.png`, `photo.jpg` and `transparent.png` together onto the window.", "say": "“I will drop three images at once.”", "who": null}, {"do": "Editor appears. Move the cursor slowly: top bar, then centre, then right panel, then the bottom bar.", "say": "“After the drop we switch to the editor. The top panel has exactly the three controls the brief asks for: Zoom In, Zoom Out and Zoom to Fit. The centre shows the original and the vectorized result side by side. The right panel has all the settings and Export All. The bar at the bottom is batch progress; Day will explain it.”", "who": null}], "nodes": ["view", "controller"]}, {"start": 65, "end": 100, "time": "1:05 – 1:40", "who": "mona", "n": 3, "title": "Zoom and navigation", "rubric": "UI Navigation & View, 2 points", "rows": [{"do": "Click Zoom In twice, Zoom Out once, then Zoom to Fit.", "say": "“Zoom In and Zoom Out change the vector preview by 25 percent per click. Zoom to Fit scales the whole SVG to fill the preview area.”", "who": null}, {"do": "Click Next twice. Point at the “3 / 3 • filename” label and the greyed-out Next button. Click Back once.", "say": "“Back and Next move through the dropped images. The label shows which image we are on, and the buttons turn off at the first and last image. Every image keeps its own settings and its own preview.”", "who": null}], "nodes": ["view", "controller", "session"]}, {"start": 100, "end": 160, "time": "1:40 – 2:40", "who": "mona", "n": 4, "title": "Settings with instant preview", "rubric": "Config: Details & BG, 2 points; Config: Colors, 3 points", "rows": [{"do": "Go to `logo.png`. Change Detail from Medium to Low, then to High. Point at the vector preview each time.", "say": "“Detail level has Low, Medium and High. As soon as I change it, a new preview is generated. Low is simpler; High follows the edges much more closely.”", "who": null}, {"do": "Point at Colors = Custom, spinner = 2, and the colour swatches. Click the spinner up to 5, then once more (it stays at 5). Set it to 3.", "say": "“Colors starts on Custom with 2 colours by default. These swatches are the colours the app detected in this image. The spinner cannot go past 5, and every change updates the preview straight away.”", "who": null}, {"do": "Switch Colors to Unlimited.", "say": "“Unlimited keeps the original palette. The spinner is disabled because it does not apply here.”", "who": null}, {"do": "Tick Remove Background. Point at the checkerboard showing through.", "say": "“Remove Background outputs a transparent SVG. You can see the checkerboard behind the shape, so the background really is gone.”", "who": null}], "nodes": ["controller", "preprocessor", "colors", "background"]}, {"start": 160, "end": 190, "time": "2:40 – 3:10", "who": "mona", "n": 5, "title": "Additional feature: presets", "rubric": "Additional feature, 1 point", "rows": [{"do": "Click Save (Preset) and save as `logo-style.properties`. Click Next, click Load and pick the file. Point at the controls changing.", "say": "“Our first additional feature is presets. Save writes the current settings to a file, and Load applies them to another image, so you set things up once and reuse it. Reading and writing happen in the background, and a broken preset file shows an error message instead of crashing. Day will show our second one, New Batch, at the end. Day, over to you.”", "who": null}], "nodes": ["presets", "presetfile"]}, {"start": 190, "end": 220, "time": "3:10 – 3:40", "who": "day", "n": 6, "title": "ZIP import", "rubric": "Zip Handling, 1 point", "rows": [{"do": "Drag `images.zip` onto the editor. Point at the counter jumping (for example “4 / 7”).", "say": "“Now the backend. I will drop a ZIP onto the editor. It is extracted to a temporary folder, only JPG and PNG entries are kept, and each one is handled exactly like a separately dropped file. We also block “Zip Slip” entries that try to write outside the temp folder.”", "who": null}], "nodes": ["zip", "importer"]}, {"start": 220, "end": 260, "time": "3:40 – 4:20", "who": "day", "n": 7, "title": "Parallel preprocessing", "rubric": "Preprocessing, 2 points", "rows": [{"do": "Point at the bottom bar: “Preparing previews: 2 of 4”. While it runs, click Next and Zoom In to show the UI still reacts.", "say": "“When images arrive, preprocessing starts automatically: detect the colours, apply Medium detail and 2 custom colours, and generate the preview. Because there are several files and the settings are Medium plus Custom, the jobs run in parallel on a thread pool. The progress bar counts finished images, and I can still click around, so nothing is frozen.”", "who": null}, {"do": "(Optional, if time) Point at the status chip changing RUNNING → READY.", "say": "(Each image also shows its own status: queued, running, ready or failed.)", "who": null}], "nodes": ["coordinator", "policy"]}, {"start": 260, "end": 285, "time": "4:20 – 4:45", "who": "day", "n": 8, "title": "How an image becomes a vector", "rubric": "Vectorization Format, 1 point", "rows": [{"do": "Show a JPG and a PNG side by side with Back/Next.", "say": "“JPG and PNG go through the same pipeline: resize to the detail level, mask the background, reduce colours, then AutoTrace turns the pixels into paths. Every SVG is validated before we show or save it. If it has no vector shapes or contains an embedded picture, it is rejected.”", "who": null}], "nodes": ["vectorization", "preprocessor", "engine", "validator"]}, {"start": 285, "end": 335, "time": "4:45 – 5:35", "who": "day", "n": 9, "title": "Export All", "rubric": "Export, 2 points", "rows": [{"do": "Click Export All. The macOS folder dialog opens. Pick `export-out` and confirm.", "say": "“Export All opens the operating system’s own folder chooser. If I cancel, nothing happens. I will choose an empty folder.”", "who": null}, {"do": "Point at “Exporting: 3 of 7”. Click Back/Next while it runs. (Cancel Processing is next to the bar.)", "say": "“Export also runs in parallel under Medium and Custom, with progress at the bottom, and the UI stays responsive. If one image fails, the others still save, and the bar ends with how many succeeded and how many failed. There is also a Cancel button that stops the running jobs.”", "who": null}, {"do": "Open `export-out` in Finder. Double-click an .svg so it opens in the browser, then press Cmd+Plus a few times.", "say": "“Here are the SVG files. They open in any browser, and zooming stays sharp because they are real paths, not a pixel image inside an SVG.”", "who": null}], "nodes": ["export", "outdir", "coordinator"]}, {"start": 335, "end": 365, "time": "5:35 – 6:05", "who": "day", "n": 10, "title": "Error handling and New Batch", "rubric": "Non-functional: handle errors gracefully; Additional feature (New Batch)", "rows": [{"do": "Drag `broken.jpg` and `notes.txt` onto the editor. Point at the messages.", "say": "“Last, errors. A corrupted JPG and an unsupported file each get a clear message, and the app keeps running. If AutoTrace is not installed, the user is told how to install it instead of seeing a stack trace.”", "who": null}, {"do": "Click New Batch at the bottom of the right panel. The drop screen comes back, empty and ready.", "say": "“Our second additional feature is New Batch. Before, starting a new set of images meant closing and re-running the app. Now one click cancels any jobs that are still running, clears the current images and goes back to the drop screen. A result that was still running for the old batch is ignored, so it can never show up in the new one.”", "who": null}], "nodes": ["importer", "controller", "session"]}, {"start": 365, "end": 405, "time": "6:05 – 6:45", "who": "both", "n": 11, "title": "Code map in IntelliJ", "rubric": "Shows we understand our own code", "rows": [{"do": "show the package tree, then open `VectorizeView` and `VectorizeController.wire() (line 53)`.", "say": "“The code follows simple MVC. My side is view/VectorizeView, which builds both screens, and controller/VectorizeController. Its wire method connects every button, dropdown and checkbox to an action.”", "who": "mona"}, {"do": "open `ProcessingCoordinator` and `ProcessingPolicy.isParallelCandidate` (line 21).", "say": "“My side is the model, the services for import, ZIP, colour, background, vectorization and export, and the concurrency package. ProcessingCoordinator runs every heavy job as a JavaFX Task on a thread pool, and ProcessingPolicy is the one place that decides parallel or sequential.”", "who": "day"}], "nodes": ["view", "controller", "coordinator", "policy"]}, {"start": 405, "end": 420, "time": "6:45 – 7:00", "who": "mona", "n": 12, "title": "Wrap-up", "rubric": "", "rows": [{"do": "Leave IntelliJ visible.", "say": "“That covers every row of the rubric plus our two additional features, presets and New Batch. We are happy to open any part of the code you would like to see.”", "who": null}], "nodes": []}], "fallback": ["**Preview stays “pending” for a long time:** AutoTrace is slow on big images. Keep talking and move on; it will appear. Use smaller demo images.", "**Drag-and-drop does not work:** use the Choose files button. It goes through the same `importPaths` method.", "**“AutoTrace is missing” error:** run `which autotrace`. If it is installed elsewhere, start with `-Dvectorize.autotrace=/path/to/autotrace`.", "**Over time: skip the error part of segment 10** and say “errors are shown per file and the app never crashes”, but still click New Batch, then go to the code map."], "rubric": [{"row": "Vectorization Format", "pts": "1", "by": "Day", "sees": "JPG and PNG both traced; exported SVG opens in a browser and stays sharp when zoomed", "proof": "`VectorizationService.convert`, `SvgValidationService.validate`"}, {"row": "UI Navigation & View", "pts": "2", "by": "Mona", "sees": "Zoom In/Out/Fit work; Back/Next move through images and disable at the ends", "proof": "`VectorizeView.setZoom` / `zoomToFit`; controller wire() lines 75–81"}, {"row": "Config: Details & BG", "pts": "2", "by": "Mona", "sees": "Low/Med/High visibly change the preview; Remove Background shows the checkerboard", "proof": "`DetailLevel`, `BackgroundRemovalService.mask`"}, {"row": "Config: Colors", "pts": "3", "by": "Mona", "sees": "Unlimited works; Custom defaults to 2, caps at 5, shows detected swatches; instant preview", "proof": "`ColorAnalysisService`, `RasterPreprocessor.prepare`, Spinner(2,5,2)"}, {"row": "Zip Handling", "pts": "1", "by": "Day", "sees": "ZIP dropped; images appear as if dropped separately", "proof": "`ZipImportService.extract`"}, {"row": "Preprocessing", "pts": "2", "by": "Day", "sees": "After a multi-drop, previews generate in parallel with a progress bar; UI usable meanwhile", "proof": "`ProcessingCoordinator.preprocess`, `ProcessingPolicy`"}, {"row": "Export", "pts": "2", "by": "Day", "sees": "OS folder chooser; parallel export with progress; files open from Finder", "proof": "`ProcessingCoordinator.exportAll`, `ExportService.exportOne`"}, {"row": "Additional feature", "pts": "1", "by": "Mona, Day", "sees": "Save/Load preset; New Batch returns to the drop screen without restarting (plus Cancel Processing)", "proof": "`PresetService.save / load; VectorizeController.newBatch`"}, {"row": "UX and UI", "pts": "subj.", "by": "Mona", "sees": "Clean two-screen design, checkerboard, swatches, clear status messages", "proof": "`VectorizeView.buildDrop` / `buildEditor`"}], "qa": {"mona": [{"q": "Drag and drop", "where": "`VectorizeView.java:413 setupDropHandler, registered by onDrop (:408)`", "say": "`setOnDragOver` accepts COPY only if the Dragboard has files; `setOnDragDropped` turns each `File` into a `Path` and passes the list to the controller. It is on both screens, so you can also drop onto the editor.", "who": "mona", "nodes": ["view"]}, {"q": "Choose files button", "where": "`VectorizeController.java:58`", "say": "A `FileChooser` with a jpg/jpeg/png/zip filter; the files go to the same `importPaths` method as a drop.", "who": "mona", "nodes": ["controller"]}, {"q": "What happens after a drop", "where": "`VectorizeController.java:109 importPaths`", "say": "Shows “Importing…”, then calls `coordinator.importAsync`. On success it adds the documents to the session, switches to the editor and starts preprocessing; on failure it shows each file’s error.", "who": "mona", "nodes": ["controller", "coordinator", "importer"]}, {"q": "Drop screen layout", "where": "`VectorizeView.java:142 buildDrop`", "say": "A centred VBox card with title, instructions, Choose files and a status label.", "who": "mona", "nodes": ["view"]}, {"q": "Editor layout (top/centre/right)", "where": "`VectorizeView.java:198 buildEditor`", "say": "A BorderPane: `setTop` holds only the 3 zoom buttons (:204), the centre is an HBox with the Original and Vector columns, and the right side holds the settings panel.", "who": "mona", "nodes": ["view"]}, {"q": "All event wiring", "where": "`VectorizeController.java:53 wire()`", "say": "Every `setOnAction` and every `valueProperty` listener is here, so the view only builds controls and the controller decides what they do.", "who": "mona", "nodes": ["controller"]}, {"q": "Zoom In / Out", "where": "Controller :75–76; VectorizeView.java:573 setZoom", "say": "Multiply or divide by 1.25, clamped between 0.1 and 8.0, applied with `WebView.setZoom`.", "who": "mona", "nodes": ["controller", "view"]}, {"q": "Zoom to Fit", "where": "`VectorizeView.java:587 zoomToFit, :595 applyFitZoom`", "say": "Scale = min(available width ÷ SVG width, available height ÷ SVG height). It waits until the WebView has loaded and recalculates when the pane is resized.", "who": "mona", "nodes": ["view"]}, {"q": "Back / Next", "where": "Controller :80–81; AppSession.back/next", "say": "Move the selected index, then `showSelected()` redraws everything; buttons are disabled at the ends (:216).", "who": "mona", "nodes": ["controller", "session"]}, {"q": "How a setting change updates the preview", "where": "Controller :84–87 listeners → changeSettings (:159)", "say": "Read all controls into one settings record, save it on the current image, then ask the coordinator to `refresh` the preview in the background.", "who": "mona", "nodes": ["controller", "coordinator"]}, {"q": "Why the `updatingControls` flag", "where": "Controller :191", "say": "When we navigate, we set the controls by code. The flag stops those changes from counting as a user edit and starting another preview.", "who": "mona", "nodes": ["controller"]}, {"q": "Custom colours max 5, default 2", "where": "`VectorizeView.java:50 IntegerSpinnerValueFactory(2, 5, 2); disabled in Unlimited at :451`", "say": "The spinner itself only allows 2 to 5 and starts at 2. The model also rejects anything outside 2 to 5.", "who": "mona", "nodes": ["view"]}, {"q": "Detected colour swatches", "where": "Controller :202", "say": "For each detected colour we add a small 24×24 Region with that background colour.", "who": "mona", "nodes": ["controller", "colors"]}, {"q": "Show the original image", "where": "`VectorizeView.java:481 showOriginal`", "say": "`new Image(url, true)` loads in the background, so a big image does not freeze the UI; an error listener shows “Could not load image”.", "who": "mona", "nodes": ["view"]}, {"q": "Show the SVG", "where": "`VectorizeView.java:510 showSvg`", "say": "Load the SVG text into a WebView with content type `image/svg+xml`, after reading its width/height for Zoom to Fit.", "who": "mona", "nodes": ["view"]}, {"q": "Checkerboard (transparency)", "where": "`VectorizeView.java:373 drawChecker`", "say": "A canvas behind the WebView, redrawn on resize, so transparent areas are visible.", "who": "mona", "nodes": ["view"]}, {"q": "Progress bar", "where": "Controller :223 showBatch", "say": "Progress = completed ÷ total from the coordinator’s BatchStatus; Cancel is enabled only while jobs are running.", "who": "mona", "nodes": ["controller", "coordinator"]}, {"q": "Export All button", "where": "Controller :233 exportAll", "say": "Opens a `DirectoryChooser (:235)`. If the user cancels, it returns null and we stop; otherwise it hands everything to `coordinator.exportAll`.", "who": "mona", "nodes": ["controller", "coordinator"]}, {"q": "Additional feature 1 (presets)", "where": "Controller :260 / :284; PresetService.java:26 save, :52 load", "say": "Settings are stored as a .properties file. Save writes to a temp file and then moves it, so an old preset is never half-overwritten. Load checks every field and reports a readable error. Both run off the FX thread with `runBackground`.", "who": "mona", "nodes": ["presets", "presetfile"]}, {"q": "Additional feature 2 (New Batch)", "where": "VectorizeController.java:314 newBatch, :327 sameBatch; VectorizeView.java:462 resetEditor; AppSession.java:19 clear", "say": "One click cancels running Tasks (cancelActive), clears the session, blanks the editor and shows the drop screen, so there is no need to re-run the app. It also increases batchId; sameBatch wraps every callback and drops it if the batch has changed, so a late result from the old batch never appears in the new one.", "who": "mona", "nodes": ["controller", "session", "view"]}, {"q": "Where the app starts", "where": "`VectorizeApplication.java:18` `start`; `Launcher.java`", "say": "`start` creates the coordinator, view and controller; `stop` shuts down the threads and deletes ZIP temp files. Launcher is a plain main class so the jar can start JavaFX.", "who": "mona", "nodes": ["app"]}], "day": [{"q": "ZipImport", "where": "`ZipImportService.java:33` `extract`", "say": "Open with `ZipFile`, loop over the entries, skip folders and non-images, copy each image to a temp folder with an index prefix so names never clash. If anything fails we delete what we already extracted; if no images are found we throw a ZIP error.", "who": "day", "nodes": ["zip"]}, {"q": "Zip Slip protection", "where": "`ZipImportService.java:58–62`", "say": "Normalise the entry path and reject it if it is absolute, starts with a drive letter, or does not stay inside the temp folder.", "who": "day", "nodes": ["zip"]}, {"q": "ZIP temp cleanup", "where": "`ZipImportService.java:99 close`", "say": "Walks each temp folder and deletes it when the app stops (`VectorizeApplication.stop`).", "who": "day", "nodes": ["zip", "app"]}, {"q": "Image import / type check", "where": "`ImageImportService.java:29` `isSupportedImage`, `:43` `importPaths`, `:82 validateImage`", "say": "Check the extension (case-insensitive), then really decode with `ImageIO.read`; null means not a real image. Each file is in its own try/catch, so one bad file does not remove the good ones.", "who": "day", "nodes": ["importer"]}, {"q": "The parallel rule", "where": "`ProcessingPolicy.java:21` `isParallelCandidate`", "say": "Parallel only if more than one image AND Medium AND Custom AND 2 colours. `hasParallelPair` (:35) checks that at least two jobs qualify. This is the only place the rule exists.", "who": "day", "nodes": ["policy"]}, {"q": "Thread pools", "where": "`ProcessingCoordinator.java:33–34`", "say": "A fixed pool of 2 to 4 threads for parallel jobs, and a single-thread executor for jobs that must be sequential. Both use daemon threads.", "who": "day", "nodes": ["coordinator"]}, {"q": "Where the Task is", "where": "`ProcessingCoordinator.java:57` `runBackground`, `:159` `schedulePreview`, `:106` `exportAll`", "say": "`call()` runs on a worker thread and does the heavy work. `setOnSucceeded`/`setOnFailed`/`setOnCancelled` run back on the FX thread, so only they touch the UI.", "who": "day", "nodes": ["coordinator"]}, {"q": "Preprocessing after a drop", "where": "`ProcessingCoordinator.java:81` `preprocess`", "say": "For each image, schedule a preview Task on the parallel pool or the serial pool depending on the policy, and report BatchStatus for the progress bar.", "who": "day", "nodes": ["coordinator", "policy"]}, {"q": "Instant preview, no stale result", "where": "`ProcessingCoordinator.java:97` `refresh`; `ImageDocument.java:43` `generation++`", "say": "Each settings change increases a generation number and cancels the old Task. When a Task finishes, we only apply its result if the generation still matches, so an old result never replaces a newer one.", "who": "day", "nodes": ["coordinator", "session"]}, {"q": "Cancel", "where": "`ProcessingCoordinator.java:72` `cancelActive`; `AutoTraceVectorEngine.java:109`", "say": "`task.cancel(true)`; the pipeline checks `isCancelled` between steps, and the engine kills the AutoTrace process with `destroyForcibly`.", "who": "day", "nodes": ["coordinator", "engine"]}, {"q": "The vectorization pipeline", "where": "`VectorizationService.java:38` `convert`", "say": "Read the image → `RasterPreprocessor.prepare` → write a temp PNG → `engine.trace` → `validator.validate` → return SVG and detected colours. The temp file is deleted in `finally`.", "who": "day", "nodes": ["vectorization"]}, {"q": "Detail level", "where": "`DetailLevel.java:14` `maxDimension`, `:23` `curveError`", "say": "Low/Medium/High resize the image to 360/640/960 px and pass error-threshold 0.5/0.25/0.1 to AutoTrace. A smaller threshold follows edges more closely.", "who": "day", "nodes": ["preprocessor", "engine"]}, {"q": "Colour detection", "where": "`ColorAnalysisService.java:124` `analyze`", "say": "Group pixels into 16-level colour bins (sampling large images), sort by count, and keep bins with at least 1% of pixels, so JPEG noise is not counted as a colour.", "who": "day", "nodes": ["colors"]}, {"q": "Reducing to N colours", "where": "`ColorAnalysisService.java:24` `palette`", "say": "Median Cut: keep splitting the heaviest colour box on its widest channel until there are N boxes, then take each box’s weighted average colour.", "who": "day", "nodes": ["colors"]}, {"q": "Custom vs Unlimited", "where": "`RasterPreprocessor.java:28` `prepare`", "say": "Only in Custom mode is every pixel snapped to the nearest palette colour; Unlimited leaves the pixels as they are.", "who": "day", "nodes": ["preprocessor"]}, {"q": "Remove background", "where": "`BackgroundRemovalService.java:23` `mask`", "say": "Transparent PNG pixels are always excluded. When the box is ticked, find the main border colour (at least 60% of the edge) and flood-fill (BFS) from the edges over similar pixels. The masked area gets an unused colour, and AutoTrace is told to skip it with `-background-color`.", "who": "day", "nodes": ["background", "preprocessor"]}, {"q": "Calling AutoTrace", "where": "`AutoTraceVectorEngine.java:29` `trace`, `ProcessBuilder` at `:62`", "say": "Arguments are built as a list (never a shell string). stderr goes to a file, we poll `waitFor` every 100 ms for cancel, there is a 60 s timeout, and we check the exit code.", "who": "day", "nodes": ["engine", "autotrace"]}, {"q": "AutoTrace missing", "where": "`AutoTraceVectorEngine.java:116` `start`", "say": "An IOException from `builder.start()` becomes a ConversionException that tells the user how to install it.", "who": "day", "nodes": ["engine"]}, {"q": "Why an interface", "where": "`VectorEngine.java:12`", "say": "It is the one real replaceable boundary: we could switch to Potrace, and tests use a fake engine without AutoTrace.", "who": "day", "nodes": ["engine"]}, {"q": "SVG validation", "where": "`SvgValidationService.java:34` `validate`", "say": "Parse the XML, check the root is an `<svg>` in the SVG namespace with a size, reject `<image>`, `<script>` and similar, and require at least one real shape.", "who": "day", "nodes": ["validator"]}, {"q": "Export", "where": "`ExportService.java:38` `exportOne`, `:96` `reserve`", "say": "Reuse the preview if the source file has not changed; otherwise convert again. Validate, write to a temp file, then move it into place. `reserve` picks name.svg, name-1.svg and so on, so nothing is overwritten.", "who": "day", "nodes": ["export", "outdir"]}, {"q": "Settings model", "where": "`VectorizationSettings.java` (record); `defaults()` at `:16`", "say": "An immutable record, so it is safe to hand to worker threads. The constructor rejects custom colours outside 2–5. Defaults: Medium, Custom, 2, no background removal.", "who": "day", "nodes": ["session"]}, {"q": "Custom exception", "where": "`ConversionException.java:5`", "say": "A checked exception with a Kind: INPUT, ZIP, ENGINE, SVG, OUTPUT, CANCELLED. The message is written for the user, and the original cause is kept.", "who": "day", "nodes": []}], "concept": [{"q": "What is event-driven programming in your app?", "a": "Nothing runs in a loop. Every button has a handler (`setOnAction`) and every dropdown or checkbox has a listener on its `valueProperty`. JavaFX calls them on the FX thread when the user acts.", "who": "mona", "nodes": ["controller"]}, {"q": "setOnAction vs addListener?", "a": "`setOnAction` is for a click (one event). `valueProperty().addListener` fires whenever a value changes, which is what we need for ComboBox, Spinner and CheckBox.", "who": "mona", "nodes": ["controller"]}, {"q": "Why WebView for the SVG?", "a": "JavaFX has no built-in SVG file viewer. WebView renders the real SVG, so the preview is exactly the file we export.", "who": "mona", "nodes": ["view"]}, {"q": "Why doesn’t the UI freeze?", "a": "All heavy work (decode, ZIP, colours, AutoTrace, writing files) runs inside a `Task` on an ExecutorService. Only the Task’s success, failure and cancel handlers touch the UI, and those run on the FX thread.", "who": "day", "nodes": ["coordinator"]}, {"q": "Why Task instead of a plain Thread?", "a": "A Task has state, cancellation, `updateMessage`, and callbacks that already run on the FX thread, so we don’t need `Platform.runLater` everywhere.", "who": "day", "nodes": ["coordinator"]}, {"q": "When exactly is it parallel?", "a": "Only when more than one file is loaded and the settings are Medium + Custom + 2 colours (`ProcessingPolicy`). Otherwise jobs go to the single-thread executor, one at a time.", "who": "day", "nodes": ["policy"]}, {"q": "How many threads, and why?", "a": "2 to 4, based on CPU cores. Each job also starts an AutoTrace process, so more threads would just compete for the CPU.", "who": "day", "nodes": ["coordinator"]}, {"q": "Checked or unchecked exception, and why?", "a": "Checked (`extends Exception`), so the compiler forces callers to handle it. The Kind lets us tell a bad input apart from a missing tool or a write failure.", "who": "day", "nodes": []}, {"q": "What is Zip Slip?", "a": "A ZIP entry named like `../../etc/x` could write outside the target folder. We normalise the path and reject anything that escapes the temp folder.", "who": "day", "nodes": ["zip"]}, {"q": "How do the two halves connect?", "a": "The controller (Mona) only calls ProcessingCoordinator and the services (Day). We treated those method signatures as a contract and reviewed each other’s changes there.", "who": "both", "nodes": ["controller", "coordinator"]}, {"q": "How did you test it?", "a": "JUnit 5 tests under `src/test/java` cover the policy, ZIP and import, the pipeline, batch failures, export, presets and the UI flow. `JUnitTestSuite` runs them all with `./mvnw test`.", "who": "both", "nodes": []}]}, "intro": ["SE233 Advanced Programming · Term Project I · Onsite demo, 14 October 2026", "**Mona**: Frontend / View     **Day**: Backend / Logic     **Time limit: 7:00**", "**How to use this script.** Part 1 is the 7-minute live demo: the left column is what to do on screen, the right column is what to say. Speak in your own words; the quotes are a guide, not something to memorise. Part 2 checks that every rubric row is shown. Part 3 is the Q&A cheat sheet for when the lecturers ask “where is X in your code?”, with file, line and a one-sentence explanation.", "Assumption: the 7 minutes covers the demo and the lecturers ask code questions afterwards. If questions come during the 7 minutes, drop the error part of segment 10 (keep the New Batch click) and shorten segment 11 (code map) to one sentence each."], "qaIntro": "Line numbers are from the main branch after the New Batch feature was added (12 October 2026). If code moves, use `Cmd+O` for the class and `Cmd+F12` for the method. When answering, open the file, put the cursor on the method, and explain it in one or two sentences in your own words.", "rubricIntro": "Tick each row during rehearsal. Pair rubric, 15 points maximum (14 objective + UX/UI).", "nodes": {"user": {"file": "(outside the app)", "own": "", "what": "The person using the app. They drop JPG/PNG files or a ZIP onto the window, or click “Choose files”.", "th": "คนที่ใช้แอป ลากไฟล์ JPG/PNG หรือ ZIP มาวางบนหน้าต่าง หรือกดปุ่ม “Choose files”"}, "app": {"file": "src/main/java/se233/vectorize/VectorizeApplication.java (+ Launcher.java)", "own": "Mona", "what": "The starting point. It creates every main object once and connects them through their constructors.", "th": "จุดเริ่มต้นของแอป สร้าง object หลักทุกตัวครั้งเดียวแล้วต่อเข้าด้วยกันผ่าน constructor"}, "view": {"file": "src/main/java/se233/vectorize/view/VectorizeView.java", "own": "Mona", "what": "Draws the UI and nothing else: a drop screen and an editor screen. The controls are public fields so the controller can listen to them.", "th": "วาดหน้าจออย่างเดียว มีหน้า drop กับหน้า editor และ control ต่าง ๆ เป็น field แบบ public ให้ controller ผูก listener ได้"}, "controller": {"file": "src/main/java/se233/vectorize/controller/VectorizeController.java", "own": "Mona", "what": "The brain of the UI. It turns every click or drop into an action, but sends all heavy work to the coordinator.", "th": "สมองของ UI แปลงทุกการคลิกหรือลากวางเป็นการกระทำ แต่ส่งงานหนักทั้งหมดไปให้ coordinator"}, "session": {"file": "src/main/java/se233/vectorize/model/AppSession.java (+ ImageDocument, VectorizationSettings, enums)", "own": "Day", "what": "In-memory state: the list of loaded ImageDocuments and which one is selected.", "th": "state ในหน่วยความจำ: รายการ ImageDocument ที่โหลดแล้ว และรูปไหนที่ถูกเลือกอยู่"}, "presets": {"file": "src/main/java/se233/vectorize/service/PresetService.java", "own": "Mona", "what": "An extra feature: save and load the current settings as a .properties file.", "th": "ฟีเจอร์เสริม: เซฟ/โหลด settings ปัจจุบันเป็นไฟล์ .properties"}, "presetfile": {"file": "(a file the user picks, *.properties)", "own": "", "what": "The preset file on disk. It's a plain text Properties file that the user can open in any editor.", "th": "ไฟล์ preset บนเครื่อง เป็นไฟล์ Properties แบบ text ธรรมดา เปิดด้วยโปรแกรมแก้ไขข้อความอะไรก็ได้"}, "coordinator": {"file": "src/main/java/se233/vectorize/concurrency/ProcessingCoordinator.java", "own": "Day", "what": "The bridge between the UI thread and the worker threads. Every heavy job becomes a JavaFX Task here.", "th": "สะพานระหว่าง UI thread กับ worker thread งานหนักทุกงานจะกลายเป็น JavaFX Task ที่นี่"}, "policy": {"file": "src/main/java/se233/vectorize/concurrency/ProcessingPolicy.java", "own": "Day", "what": "The assignment's parallel rule, kept in one place.", "th": "กฎรันขนานตามโจทย์ เก็บไว้ที่เดียว"}, "importer": {"file": "src/main/java/se233/vectorize/service/ImageImportService.java", "own": "Day", "what": "Turns the dropped paths into ImageDocuments, keeping the good files even when some are bad.", "th": "แปลง path ที่ลากมาเป็น ImageDocument โดยเก็บไฟล์ที่ดีไว้แม้จะมีบางไฟล์เสีย"}, "zip": {"file": "src/main/java/se233/vectorize/service/ZipImportService.java", "own": "Day", "what": "Safely unzips the images into a temporary folder that the app owns.", "th": "แตกไฟล์รูปจาก ZIP อย่างปลอดภัยลงโฟลเดอร์ชั่วคราวของแอป"}, "vectorization": {"file": "src/main/java/se233/vectorize/service/VectorizationService.java", "own": "Day", "what": "Runs the whole pipeline: one image path in, a validated SVG out.", "th": "คุม pipeline ทั้งหมด: ใส่ path ของรูปหนึ่งรูป ได้ SVG ที่ตรวจแล้วออกมา"}, "preprocessor": {"file": "src/main/java/se233/vectorize/service/RasterPreprocessor.java", "own": "Day", "what": "Prepares the pixels so autotrace gets a clean image: the right size, a limited set of colors, and a background it can skip.", "th": "เตรียมพิกเซลให้ autotrace ได้รูปที่สะอาด: ขนาดพอดี, จำนวนสีจำกัด, และพื้นหลังที่ข้ามได้"}, "background": {"file": "src/main/java/se233/vectorize/service/BackgroundRemovalService.java", "own": "Day", "what": "Decides which pixels are background. It returns a boolean[] where true means “not foreground”.", "th": "ตัดสินว่าพิกเซลไหนเป็นพื้นหลัง คืนค่าเป็น boolean[] โดย true = “ไม่ใช่ foreground”"}, "colors": {"file": "src/main/java/se233/vectorize/service/ColorAnalysisService.java", "own": "Day", "what": "Finds the main colors (shown as swatches in the UI) and builds the 2–5 color palette for Custom mode.", "th": "หาสีหลัก (โชว์เป็นช่องสีใน UI) และสร้าง palette 2–5 สีสำหรับโหมด Custom"}, "engine": {"file": "src/main/java/se233/vectorize/adapter/AutoTraceVectorEngine.java (implements VectorEngine.java)", "own": "Day", "what": "The adapter that runs the external autotrace program and returns its SVG text.", "th": "adapter ที่รันโปรแกรม autotrace ภายนอกแล้วคืนข้อความ SVG ออกมา"}, "autotrace": {"file": "(external program, not our code)", "own": "", "what": "An open-source command-line tracer. It turns a bitmap into vector <path> outlines.", "th": "โปรแกรม command-line แบบ open-source ที่แปลงรูป bitmap เป็นเส้นขอบ vector (<path>)"}, "export": {"file": "src/main/java/se233/vectorize/service/ExportService.java", "own": "Day", "what": "Saves one image as one .svg file, safely. The coordinator handles the batch.", "th": "เซฟรูปหนึ่งรูปเป็นไฟล์ .svg หนึ่งไฟล์อย่างปลอดภัย ส่วนทั้งชุด coordinator เป็นคนจัดการ"}, "validator": {"file": "src/main/java/se233/vectorize/service/SvgValidationService.java", "own": "Day", "what": "A safety gate: it only lets real, safe vector SVG through. It's used for both preview and export.", "th": "ด่านตรวจความปลอดภัย ปล่อยผ่านเฉพาะ SVG ที่เป็น vector จริงและปลอดภัย ใช้ทั้งตอนพรีวิวและ export"}, "outdir": {"file": "(the folder chosen in DirectoryChooser)", "own": "", "what": "Where the final .svg files go: one file per image.", "th": "ที่เก็บไฟล์ .svg สุดท้าย รูปละหนึ่งไฟล์"}}};
+// Relative to docs/demo/, so it works in any clone of the repo whatever the folder is called.
+const DEFAULT_DIAG = '../../.archify/architecture-se233-vectorize-20261012-031041/se233-vectorize.html';
+const TOTAL = 420;
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('vz-script:' + k); return v === null ? d : JSON.parse(v); } catch (_) { return d; } },
+  set(k, v) { try { localStorage.setItem('vz-script:' + k, JSON.stringify(v)); } catch (_) {} },
+};
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const md = s => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+const fmt = s => { const a = Math.abs(Math.round(s)); return (s < 0 ? '+' : '') + Math.floor(a / 60) + ':' + String(a % 60).padStart(2, '0'); };
+const NAME = id => (DATA.nodes[id] && (DATA.nodes[id].file.match(/([A-Za-z]+)\.java/) || [])[1]) || ({ autotrace: 'autotrace CLI', presetfile: 'Preset file', outdir: 'Output folder' }[id] || id);
+const DIAG_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1.5" y="2" width="5" height="4" rx="1"/><rect x="9.5" y="10" width="5" height="4" rx="1"/><path d="M4 6v3.5a1 1 0 0 0 1 1h4.5"/></svg>';
+const nodeChips = ids => ids.map(id => `<button class="chip" data-node="${id}" title="Show ${esc(NAME(id))} in the architecture diagram">${DIAG_ICON}${esc(NAME(id))}</button>`).join('');
+
+let who = store.get('who', 'all');
+let current = 0;
+
+/* ---------------- demo tab ---------------- */
+// The first two intro lines (course, team) are already in the header.
+const introParas = DATA.intro.filter(p => !/^SE233|^\*\*Mona\*\*/.test(p));
+$('#intro').innerHTML = introParas.map((p, i) => `<span style="display:block;margin-bottom:8px${/^Assumption/.test(p) ? ';font-style:italic;font-size:14.5px' : ''}">${md(p)}</span>`).join('');
+$('#setup ul').innerHTML = DATA.setup.map(s => `<li>${md(s)}</li>`).join('');
+$('#fallback ul').innerHTML = DATA.fallback.map(s => `<li>${md(s)}</li>`).join('');
+const SEGS = DATA.segments;
+$('#strip').innerHTML = SEGS.map((s, i) => `<button class="${s.who}" data-i="${i}" style="flex:${s.end - s.start}" title="${esc(s.time + ' · ' + s.who.toUpperCase() + ' · ' + s.n + '. ' + s.title)}">${s.n}</button>`).join('');
+
+const speaksIn = (s, w) => w === 'all' || s.who === w || s.rows.some(r => r.who === w);
+const label = w => ({ mona: 'Mona', day: 'Day', both: 'Both' }[w]);
+
+function segHTML(s, i) {
+  const rows = s.rows.filter(r => who === 'all' || !r.who || r.who === who);
+  return `<article class="seg ${s.who}" id="seg-${i}" data-i="${i}">
+    <div class="seg-head"><span class="t">${s.time}</span><span class="badge ${s.who}">${label(s.who)}</span><h3>${s.n}. ${md(s.title)}</h3><span class="seg-left" data-left></span>${s.rubric ? `<span class="rub">Rubric: ${md(s.rubric)}</span>` : ''}</div>
+    <div class="rows">${rows.map(r => `<div class="row">
+      <div class="do">${r.who ? `<span class="badge ${r.who} who-tag">${label(r.who)}</span>` : ''}<span class="lbl">DO</span>${md(r.do)}</div>
+      <div class="say"><span class="lbl">SAY</span>${md(r.say)}</div></div>`).join('')}</div>
+    ${s.nodes.length ? `<div class="seg-foot">Files in this part: ${nodeChips(s.nodes)}</div>` : ''}
+  </article>`;
+}
+
+function renderSegments() {
+  let html = '', i = 0;
+  while (i < SEGS.length) {
+    if (speaksIn(SEGS[i], who)) { html += segHTML(SEGS[i], i); i++; continue; }
+    const from = i;
+    while (i < SEGS.length && !speaksIn(SEGS[i], who)) i++;
+    const a = SEGS[from], b = SEGS[i - 1];
+    const lastSay = (b.rows[b.rows.length - 1] || {}).say || '';
+    const tail = lastSay.replace(/[“”]/g, '').split(/(?<=[.!?])\s+/).filter(Boolean).slice(-1)[0] || '';
+    const other = label(a.who === 'both' ? 'both' : a.who);
+    html += `<div class="wait" data-from="${from}" data-to="${i - 1}">
+      <span class="badge ${a.who}">${other}</span>
+      <span><b>${other} is speaking</b> · ${a.time.split(' – ')[0]} – ${b.time.split(' – ')[1]} · ${from === i - 1 ? 'segment ' + a.n : 'segments ' + a.n + '–' + b.n}</span>
+      <button class="ghost" data-expand="${from}">Show their lines</button>
+      ${i < SEGS.length ? `<span class="cue">Your cue: they finish with <b>“${esc(tail)}”</b></span>` : ''}
+    </div>`;
+  }
+  $('#segments').innerHTML = html;
+  $$('.strip button').forEach(b => b.classList.toggle('dim', !speaksIn(SEGS[+b.dataset.i], who)));
+  markCurrent(false);
+}
+
+function setWho(w) {
+  who = w; store.set('who', w);
+  $$('.seg-ctl button').forEach(b => b.setAttribute('aria-pressed', b.dataset.who === w));
+  renderSegments(); renderQA();
+}
+
+function elOf(i) {
+  return $('#seg-' + i) || $$('.wait').find(w => +w.dataset.from <= i && i <= +w.dataset.to);
+}
+function markCurrent(scroll) {
+  $$('.seg.now,.wait.now').forEach(e => e.classList.remove('now'));
+  $$('.strip button').forEach(b => b.classList.toggle('now', +b.dataset.i === current));
+  const el = elOf(current);
+  if (el) { el.classList.add('now'); if (scroll) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  updateNow();
+}
+function go(i, scroll = true) { current = Math.max(0, Math.min(SEGS.length - 1, i)); markCurrent(scroll); }
+function step(d) {
+  // Jump over segments the selected speaker does not speak in, but keep their wait bar reachable.
+  let i = current + d;
+  if (who !== 'all') {
+    const el = elOf(current);
+    if (el && el.classList.contains('wait')) i = d > 0 ? +el.dataset.to + 1 : +el.dataset.from - 1;
+  }
+  go(i);
+}
+
+/* ---------------- timer ---------------- */
+let elapsed = store.get('elapsed', 0), running = false, last = 0, raf = 0;
+function tick(t) {
+  if (running) { elapsed += (t - last) / 1000; last = t; raf = requestAnimationFrame(tick); }
+  const left = TOTAL - elapsed;
+  $('#clock').textContent = fmt(left);
+  $('#timer').classList.toggle('over', left < 0);
+  $('#nowbar').style.width = Math.min(100, elapsed / TOTAL * 100) + '%';
+  if (running) {
+    const i = SEGS.findIndex(s => elapsed < s.end);
+    const idx = i < 0 ? SEGS.length - 1 : i;
+    if (idx !== current) go(idx);
+    else updateNow();
+  }
+}
+function updateNow() {
+  const s = SEGS[current];
+  const inSeg = elapsed >= s.start && elapsed < s.end;
+  $$('[data-left]').forEach(e => e.textContent = '');
+  const card = $('#seg-' + current);
+  if (card && (running || elapsed > 0) && inSeg) card.querySelector('[data-left]').textContent = fmt(s.end - elapsed) + ' left';
+  const next = SEGS.slice(current + 1).find(x => who === 'all' || speaksIn(x, who));
+  $('#nowtxt').innerHTML = `Now: <span class="badge ${s.who}">${label(s.who)}</span> <b>${s.n}. ${md(s.title)}</b> · ${s.time}` +
+    (next ? ` &nbsp;→ next${who === 'all' ? '' : ' for you'}: <b>${next.n}. ${md(next.title)}</b> at ${next.time.split(' – ')[0]}` : '');
+}
+function play() {
+  running = !running;
+  $('#tPlay').textContent = running ? '❚❚' : '▶';
+  $('#tPlay').setAttribute('aria-label', running ? 'Pause timer' : 'Start timer');
+  if (running) { last = performance.now(); raf = requestAnimationFrame(tick); } else { cancelAnimationFrame(raf); store.set('elapsed', elapsed); }
+}
+function reset() { if (running) play(); elapsed = 0; store.set('elapsed', 0); tick(0); go(0); }
+
+/* ---------------- Q&A ---------------- */
+function qaCard(q, kind) {
+  const where = q.where ? `<button class="where" data-copy="${esc(q.where.replace(/`/g, ''))}" title="Click to copy">${md(q.where)}</button>` : '';
+  return `<div class="qa ${q.who}"><div class="qa-q"><span class="badge ${q.who}">${label(q.who)}</span>${md(q.q)}</div>
+    ${where}<div class="qa-a">${md(q.say || q.a)}</div>
+    ${q.nodes.length ? `<div class="links">${nodeChips(q.nodes)}</div>` : ''}</div>`;
+}
+function renderQA() {
+  const term = ($('#search').value || '').trim().toLowerCase();
+  const show = q => (who === 'all' || q.who === who || q.who === 'both') && (!term || JSON.stringify(q).toLowerCase().includes(term));
+  const groups = [['Mona: “where is…?” (frontend)', DATA.qa.mona], ['Day: “where is…?” (backend)', DATA.qa.day], ['Likely concept questions', DATA.qa.concept]];
+  let html = '';
+  for (const [title, list] of groups) {
+    const items = list.filter(show);
+    if (items.length) html += `<h2 class="sec">${title}</h2>` + items.map(q => qaCard(q)).join('');
+  }
+  $('#qaList').innerHTML = html || '<p class="empty">No questions match.</p>';
+}
+$('#qaIntro').innerHTML = md(DATA.qaIntro);
+$('#search').addEventListener('input', renderQA);
+
+/* ---------------- rubric ---------------- */
+const ticked = store.get('ticks', {});
+$('#rubricIntro').innerHTML = md(DATA.rubricIntro || '');
+function renderRubric() {
+  $('#rubricTbl tbody').innerHTML = DATA.rubric.map((r, i) => {
+    const by = r.by.split(/,\s*/).map(b => `<span class="badge ${b.toLowerCase()}">${esc(b)}</span>`).join(' ');
+    return `<tr class="${ticked[i] ? 'done' : ''}"><td><input type="checkbox" data-tick="${i}" ${ticked[i] ? 'checked' : ''} aria-label="Shown: ${esc(r.row)}"></td>
+      <td><b>${md(r.row)}</b></td><td>${esc(r.pts)}</td><td>${by}</td><td>${md(r.sees)}</td><td>${md(r.proof)}</td></tr>`;
+  }).join('');
+  const max = DATA.rubric.reduce((a, r) => a + (parseInt(r.pts) || 0), 0);
+  const got = DATA.rubric.reduce((a, r, i) => a + (ticked[i] ? parseInt(r.pts) || 0 : 0), 0);
+  $('#score').innerHTML = `Shown in rehearsal: <b>${got}</b> / ${max} objective points <button class="ghost" id="clearTicks" style="margin-left:8px">Clear ticks</button>`;
+}
+document.addEventListener('change', e => {
+  const t = e.target.dataset && e.target.dataset.tick;
+  if (t !== undefined) { ticked[t] = e.target.checked; store.set('ticks', ticked); renderRubric(); }
+});
+
+/* ---------------- file map ---------------- */
+const LAYERS = [
+  ['Frontend: startup, screen and events', ['app', 'view', 'controller', 'presets']],
+  ['Shared state (model)', ['session']],
+  ['Concurrency', ['coordinator', 'policy']],
+  ['Import', ['importer', 'zip']],
+  ['Vectorization pipeline', ['vectorization', 'preprocessor', 'background', 'colors', 'engine', 'validator']],
+  ['Export', ['export']],
+  ['Outside our code', ['autotrace', 'presetfile', 'outdir']],
+];
+$('#map').innerHTML = LAYERS.map(([t, ids]) => `<div class="layer">${t}</div><div class="grid">${ids.filter(id => DATA.nodes[id]).map(id => {
+  const n = DATA.nodes[id], own = (n.own || '').toLowerCase();
+  return `<div class="node ${own}"><h4>${esc(NAME(id))}${own ? `<span class="badge ${own}">${esc(n.own)}</span>` : ''}</h4>
+    <div class="path">${esc(n.file.replace('src/main/java/se233/vectorize/', ''))}</div><p>${md(n.what)}</p>
+    <button class="chip" data-node="${id}">${DIAG_ICON}Show in diagram</button></div>`;
+}).join('')}</div>`).join('');
+
+/* ---------------- diagram drawer ---------------- */
+let diagPath = store.get('diag-in-repo', DEFAULT_DIAG);
+$('#diagPath').value = diagPath;
+$('#diagPath').addEventListener('change', e => { diagPath = e.target.value.trim() || DEFAULT_DIAG; store.set('diag-in-repo', diagPath); $('#frame').removeAttribute('src'); syncLinks(); });
+function theme() {
+  const t = document.documentElement.dataset.theme;
+  return t || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+}
+const diagURL = hash => diagPath + '?theme=' + theme() + (hash ? '#' + hash : '');
+function syncLinks() { $('#newTab').href = diagURL(''); }
+function openDiagram(hash, title) {
+  const url = diagURL(hash);
+  // Only the #fragment changes between boxes, so the diagram does not reload.
+  $('#frame').setAttribute('src', url);
+  $('#drawerTab').href = url;
+  $('#drawerTitle').innerHTML = esc(title) + '<small>Click the highlighted box to read what it does and how it connects</small>';
+  $('#drawer').classList.add('open');
+  $('#drawer').setAttribute('aria-hidden', 'false');
+}
+function closeDiagram() { $('#drawer').classList.remove('open'); $('#drawer').setAttribute('aria-hidden', 'true'); }
+$('#drawerClose').addEventListener('click', closeDiagram);
+syncLinks();
+
+/* ---------------- tabs, theme, events ---------------- */
+function setTab(name) {
+  $$('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === name));
+  $$('main > section').forEach(s => s.hidden = s.id !== 'tab-' + name);
+  store.set('tab', name);
+  window.scrollTo({ top: 0 });
+}
+$$('.tabs button').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+$$('.seg-ctl button').forEach(b => b.addEventListener('click', () => setWho(b.dataset.who)));
+$('#tPlay').addEventListener('click', play);
+$('#tReset').addEventListener('click', reset);
+function setFocus(on) { document.body.classList.toggle('focus', on); $('#focusBtn').setAttribute('aria-pressed', on); store.set('focus', on); if (on) markCurrent(true); }
+$('#focusBtn').addEventListener('click', () => setFocus(!document.body.classList.contains('focus')));
+$('#themeBtn').addEventListener('click', () => {
+  const next = theme() === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next; store.set('theme', next); syncLinks();
+  if ($('#frame').getAttribute('src')) $('#frame').setAttribute('src', diagURL(($('#frame').getAttribute('src').split('#')[1]) || ''));
+});
+const savedTheme = store.get('theme', null); if (savedTheme) document.documentElement.dataset.theme = savedTheme;
+
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 1600); }
+
+document.addEventListener('click', e => {
+  const n = e.target.closest('[data-node]');
+  if (n) { openDiagram('focus=' + n.dataset.node, NAME(n.dataset.node)); return; }
+  const r = e.target.closest('[data-route]');
+  if (r) { const [a, b] = r.dataset.route.split('~'); openDiagram('route=' + r.dataset.route, 'Path: ' + NAME(a) + ' → ' + NAME(b)); return; }
+  if (e.target.closest('[data-open-diagram]')) { openDiagram('', 'Architecture'); return; }
+  const c = e.target.closest('[data-copy]');
+  if (c) {
+    const text = c.dataset.copy;
+    (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => toast('Copied: ' + text), () => toast(text));
+    return;
+  }
+  const x = e.target.closest('[data-expand]');
+  if (x) { setWho('all'); go(+x.dataset.expand); return; }
+  if (e.target.id === 'clearTicks') { for (const k in ticked) delete ticked[k]; store.set('ticks', ticked); renderRubric(); return; }
+  const s = e.target.closest('.strip button');
+  if (s) { setTab('demo'); go(+s.dataset.i); return; }
+  const card = e.target.closest('.seg, .wait');
+  if (card && !e.target.closest('button,a')) { current = +(card.dataset.i ?? card.dataset.from); markCurrent(false); }
+});
+document.addEventListener('keydown', e => {
+  if (e.target.matches('input, textarea') || e.metaKey || e.ctrlKey || e.altKey) { if (e.key === 'Escape') e.target.blur(); return; }
+  const k = e.key.toLowerCase();
+  if (k === 'escape') closeDiagram();
+  else if (k === 'b') setWho('all'); else if (k === 'm') setWho('mona'); else if (k === 'd') setWho('day');
+  else if (k === 'arrowright' || k === 'j') { e.preventDefault(); setTab('demo'); step(1); }
+  else if (k === 'arrowleft' || k === 'k') { e.preventDefault(); setTab('demo'); step(-1); }
+  else if (k === 'f') setFocus(!document.body.classList.contains('focus'));
+  else if (k === 's') play(); else if (k === 'r') reset();
+  else if ('1234'.includes(k)) setTab(['demo', 'qa', 'rubric', 'map'][+k - 1]);
+});
+
+/* ---------------- init ---------------- */
+setWho(who);
+renderRubric();
+setTab(store.get('tab', 'demo'));
+if (store.get('focus', false)) setFocus(true);
+const startIdx = SEGS.findIndex(s => elapsed < s.end);
+current = startIdx < 0 ? SEGS.length - 1 : startIdx;
+tick(0); markCurrent(false);
+</script>
+</body>
+</html>

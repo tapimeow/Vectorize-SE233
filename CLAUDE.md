@@ -75,8 +75,8 @@ Day's side — this repo's shared policy above is unaffected either way.
 ## Presentation script for the onsite demo
 
 There is a demo script for the October 14 presentation:
-`../Vectorize-Demo-Script.docx` (one directory above this repo, in
-`04_Term_Project/`, so it is not tracked by git). It has three parts: the
+[`docs/demo/Vectorize-Demo-Script.docx`](docs/demo/Vectorize-Demo-Script.docx),
+tracked in git so both teammates see the same version. It has three parts: the
 7-minute live demo (DO/SAY table per segment, who presents what), a rubric
 coverage checklist, and a Q&A cheat sheet that maps "where is X?" to exact
 `File.java:line` references.
@@ -92,6 +92,14 @@ When a change adds or alters a user-visible feature, or moves code that the
 Q&A cheat sheet cites by line number, update the script in the same session
 (or tell the human it is now out of date). Line numbers there must match the
 current `main`.
+
+The `.docx` is the source of truth. `docs/demo/Vectorize-Demo-Script.html` is
+an interactive copy built from it (Both/Mona/Day filter, 7-minute timer, focus
+mode, rubric ticks, and buttons that open
+`.archify/architecture-se233-vectorize-20261012-031041/se233-vectorize.html`
+at `#focus=<node id>` through a relative `../../.archify/...` path, so it works
+in any clone). After editing the `.docx`, rebuild the HTML from the repo root
+with `python3 docs/demo/src/build_html.py` and commit both files together.
 
 ## The coursebook's own AI policy (read this before "just implement it")
 

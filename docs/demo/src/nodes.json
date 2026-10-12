@@ -1,0 +1,122 @@
+{
+ "user": {
+  "file": "(outside the app)",
+  "own": "",
+  "what": "The person using the app. They drop JPG/PNG files or a ZIP onto the window, or click “Choose files”.",
+  "th": "คนที่ใช้แอป ลากไฟล์ JPG/PNG หรือ ZIP มาวางบนหน้าต่าง หรือกดปุ่ม “Choose files”"
+ },
+ "app": {
+  "file": "src/main/java/se233/vectorize/VectorizeApplication.java (+ Launcher.java)",
+  "own": "Mona",
+  "what": "The starting point. It creates every main object once and connects them through their constructors.",
+  "th": "จุดเริ่มต้นของแอป สร้าง object หลักทุกตัวครั้งเดียวแล้วต่อเข้าด้วยกันผ่าน constructor"
+ },
+ "view": {
+  "file": "src/main/java/se233/vectorize/view/VectorizeView.java",
+  "own": "Mona",
+  "what": "Draws the UI and nothing else: a drop screen and an editor screen. The controls are public fields so the controller can listen to them.",
+  "th": "วาดหน้าจออย่างเดียว มีหน้า drop กับหน้า editor และ control ต่าง ๆ เป็น field แบบ public ให้ controller ผูก listener ได้"
+ },
+ "controller": {
+  "file": "src/main/java/se233/vectorize/controller/VectorizeController.java",
+  "own": "Mona",
+  "what": "The brain of the UI. It turns every click or drop into an action, but sends all heavy work to the coordinator.",
+  "th": "สมองของ UI แปลงทุกการคลิกหรือลากวางเป็นการกระทำ แต่ส่งงานหนักทั้งหมดไปให้ coordinator"
+ },
+ "session": {
+  "file": "src/main/java/se233/vectorize/model/AppSession.java (+ ImageDocument, VectorizationSettings, enums)",
+  "own": "",
+  "what": "In-memory state: the list of loaded ImageDocuments and which one is selected.",
+  "th": "state ในหน่วยความจำ: รายการ ImageDocument ที่โหลดแล้ว และรูปไหนที่ถูกเลือกอยู่"
+ },
+ "presets": {
+  "file": "src/main/java/se233/vectorize/service/PresetService.java",
+  "own": "Mona",
+  "what": "An extra feature: save and load the current settings as a .properties file.",
+  "th": "ฟีเจอร์เสริม: เซฟ/โหลด settings ปัจจุบันเป็นไฟล์ .properties"
+ },
+ "presetfile": {
+  "file": "(a file the user picks, *.properties)",
+  "own": "",
+  "what": "The preset file on disk. It's a plain text Properties file that the user can open in any editor.",
+  "th": "ไฟล์ preset บนเครื่อง เป็นไฟล์ Properties แบบ text ธรรมดา เปิดด้วยโปรแกรมแก้ไขข้อความอะไรก็ได้"
+ },
+ "coordinator": {
+  "file": "src/main/java/se233/vectorize/concurrency/ProcessingCoordinator.java",
+  "own": "Day",
+  "what": "The bridge between the UI thread and the worker threads. Every heavy job becomes a JavaFX Task here.",
+  "th": "สะพานระหว่าง UI thread กับ worker thread งานหนักทุกงานจะกลายเป็น JavaFX Task ที่นี่"
+ },
+ "policy": {
+  "file": "src/main/java/se233/vectorize/concurrency/ProcessingPolicy.java",
+  "own": "Day",
+  "what": "The assignment's parallel rule, kept in one place.",
+  "th": "กฎรันขนานตามโจทย์ เก็บไว้ที่เดียว"
+ },
+ "importer": {
+  "file": "src/main/java/se233/vectorize/service/ImageImportService.java",
+  "own": "Day",
+  "what": "Turns the dropped paths into ImageDocuments, keeping the good files even when some are bad.",
+  "th": "แปลง path ที่ลากมาเป็น ImageDocument โดยเก็บไฟล์ที่ดีไว้แม้จะมีบางไฟล์เสีย"
+ },
+ "zip": {
+  "file": "src/main/java/se233/vectorize/service/ZipImportService.java",
+  "own": "Day",
+  "what": "Safely unzips the images into a temporary folder that the app owns.",
+  "th": "แตกไฟล์รูปจาก ZIP อย่างปลอดภัยลงโฟลเดอร์ชั่วคราวของแอป"
+ },
+ "vectorization": {
+  "file": "src/main/java/se233/vectorize/service/VectorizationService.java",
+  "own": "Day",
+  "what": "Runs the whole pipeline: one image path in, a validated SVG out.",
+  "th": "คุม pipeline ทั้งหมด: ใส่ path ของรูปหนึ่งรูป ได้ SVG ที่ตรวจแล้วออกมา"
+ },
+ "preprocessor": {
+  "file": "src/main/java/se233/vectorize/service/RasterPreprocessor.java",
+  "own": "Day",
+  "what": "Prepares the pixels so autotrace gets a clean image: the right size, a limited set of colors, and a background it can skip.",
+  "th": "เตรียมพิกเซลให้ autotrace ได้รูปที่สะอาด: ขนาดพอดี, จำนวนสีจำกัด, และพื้นหลังที่ข้ามได้"
+ },
+ "background": {
+  "file": "src/main/java/se233/vectorize/service/BackgroundRemovalService.java",
+  "own": "Day",
+  "what": "Decides which pixels are background. It returns a boolean[] where true means “not foreground”.",
+  "th": "ตัดสินว่าพิกเซลไหนเป็นพื้นหลัง คืนค่าเป็น boolean[] โดย true = “ไม่ใช่ foreground”"
+ },
+ "colors": {
+  "file": "src/main/java/se233/vectorize/service/ColorAnalysisService.java",
+  "own": "Day",
+  "what": "Finds the main colors (shown as swatches in the UI) and builds the 2–5 color palette for Custom mode.",
+  "th": "หาสีหลัก (โชว์เป็นช่องสีใน UI) และสร้าง palette 2–5 สีสำหรับโหมด Custom"
+ },
+ "engine": {
+  "file": "src/main/java/se233/vectorize/adapter/AutoTraceVectorEngine.java (implements VectorEngine.java)",
+  "own": "Day",
+  "what": "The adapter that runs the external autotrace program and returns its SVG text.",
+  "th": "adapter ที่รันโปรแกรม autotrace ภายนอกแล้วคืนข้อความ SVG ออกมา"
+ },
+ "autotrace": {
+  "file": "(external program, not our code)",
+  "own": "",
+  "what": "An open-source command-line tracer. It turns a bitmap into vector <path> outlines.",
+  "th": "โปรแกรม command-line แบบ open-source ที่แปลงรูป bitmap เป็นเส้นขอบ vector (<path>)"
+ },
+ "export": {
+  "file": "src/main/java/se233/vectorize/service/ExportService.java",
+  "own": "Day",
+  "what": "Saves one image as one .svg file, safely. The coordinator handles the batch.",
+  "th": "เซฟรูปหนึ่งรูปเป็นไฟล์ .svg หนึ่งไฟล์อย่างปลอดภัย ส่วนทั้งชุด coordinator เป็นคนจัดการ"
+ },
+ "validator": {
+  "file": "src/main/java/se233/vectorize/service/SvgValidationService.java",
+  "own": "Day",
+  "what": "A safety gate: it only lets real, safe vector SVG through. It's used for both preview and export.",
+  "th": "ด่านตรวจความปลอดภัย ปล่อยผ่านเฉพาะ SVG ที่เป็น vector จริงและปลอดภัย ใช้ทั้งตอนพรีวิวและ export"
+ },
+ "outdir": {
+  "file": "(the folder chosen in DirectoryChooser)",
+  "own": "",
+  "what": "Where the final .svg files go: one file per image.",
+  "th": "ที่เก็บไฟล์ .svg สุดท้าย รูปละหนึ่งไฟล์"
+ }
+}

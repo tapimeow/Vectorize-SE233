@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vectorize Demo Script</title>
+<style>
+:root{
+  --bg:#FAFAF9; --surface:#FFFFFF; --surface2:#F5F5F4; --text:#1C1917; --muted:#57534E; --faint:#8A817C; --line:#E7E5E4;
+  --mona:#0F766E; --mona-bg:#E3F3EF; --day:#C2410C; --day-bg:#FDEBDF; --both:#4338CA; --both-bg:#ECEEFC;
+  --code:#9A3412; --code-bg:#F3EEEA; --accent:#2563EB; --ok:#15803D; --bad:#B91C1C; --shadow:0 1px 2px rgb(0 0 0/.06),0 4px 16px rgb(0 0 0/.05);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E0C0B; --surface:#1A1715; --surface2:#24201E; --text:#F2EFEC; --muted:#B4ABA5; --faint:#857B75; --line:#35302C;
+    --mona:#5EEAD4; --mona-bg:#0E2B27; --day:#FDBA74; --day-bg:#34200F; --both:#A5B4FC; --both-bg:#1D1C45;
+    --code:#FDBA74; --code-bg:#2A2421; --accent:#60A5FA; --ok:#4ADE80; --bad:#F87171; --shadow:none; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E0C0B; --surface:#1A1715; --surface2:#24201E; --text:#F2EFEC; --muted:#B4ABA5; --faint:#857B75; --line:#35302C;
+  --mona:#5EEAD4; --mona-bg:#0E2B27; --day:#FDBA74; --day-bg:#34200F; --both:#A5B4FC; --both-bg:#1D1C45;
+  --code:#FDBA74; --code-bg:#2A2421; --accent:#60A5FA; --ok:#4ADE80; --bad:#F87171; --shadow:none; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:150px}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,"Noto Sans Thai",sans-serif;-webkit-font-smoothing:antialiased}
+code,.mono{font:0.86em/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+code{color:var(--code);background:var(--code-bg);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--accent)}
+.wrap{max-width:1040px;margin:0 auto;padding:0 16px}
+
+/* ---------- top bar ---------- */
+.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:10px 0}
+.brand{font-weight:700;font-size:17px;margin-right:auto;white-space:nowrap}
+.brand small{display:block;font-weight:500;font-size:12px;color:var(--muted)}
+.seg-ctl{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--surface);gap:2px}
+.seg-ctl button{border:0;background:transparent;padding:6px 14px;border-radius:999px;font-weight:600;font-size:14px;color:var(--muted)}
+.seg-ctl button[aria-pressed="true"]{color:#fff;background:var(--text)}
+.seg-ctl button[data-who="mona"][aria-pressed="true"]{background:var(--mona);color:var(--surface)}
+.seg-ctl button[data-who="day"][aria-pressed="true"]{background:var(--day);color:var(--surface)}
+.seg-ctl button[data-who="all"][aria-pressed="true"]{background:var(--text);color:var(--bg)}
+.timer{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 4px 3px 12px}
+.timer .clock{font:600 15px ui-monospace,SFMono-Regular,Menlo,monospace;min-width:52px;text-align:right}
+.timer.over .clock{color:var(--bad)}
+.icon-btn{border:0;background:var(--surface2);border-radius:999px;width:30px;height:30px;display:inline-grid;place-items:center;font-size:13px}
+.icon-btn:hover{background:var(--line)}
+.ghost{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:14px;font-weight:600}
+.ghost[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.tabs button{border:0;background:transparent;padding:8px 12px;font-weight:600;font-size:14px;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--text);border-bottom-color:var(--text)}
+.nowline{height:3px;background:var(--line);position:relative}
+.nowline i{position:absolute;inset:0 auto 0 0;width:0;background:var(--accent);transition:width .3s linear}
+.nowtxt{font-size:13px;color:var(--muted);padding:0 0 8px;min-height:20px}
+.nowtxt b{color:var(--text)}
+
+/* ---------- common ---------- */
+main{padding:22px 0 120px}
+section[hidden]{display:none}
+h2.sec{font-size:22px;margin:28px 0 10px}
+.lead{color:var(--muted);margin:0 0 14px}
+.badge{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 9px;border-radius:999px}
+.badge.mona{color:var(--mona);background:var(--mona-bg)} .badge.day{color:var(--day);background:var(--day-bg)} .badge.both{color:var(--both);background:var(--both-bg)}
+.chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 10px;font-size:13px;font-weight:600;color:var(--muted)}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip svg{width:13px;height:13px}
+details.box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px 16px;margin:0 0 14px;box-shadow:var(--shadow)}
+details.box summary{cursor:pointer;font-weight:700;padding:10px 0}
+details.box ul{margin:0 0 12px;padding-left:20px} details.box li{margin:5px 0}
+
+/* ---------- timeline strip ---------- */
+.strip{display:flex;height:34px;border-radius:10px;overflow:hidden;border:1px solid var(--line);margin:4px 0 6px}
+.strip button{border:0;border-right:1px solid var(--bg);font-size:12px;font-weight:700;padding:0;min-width:0;overflow:hidden}
+.strip button:last-child{border-right:0}
+.strip .mona{background:var(--mona-bg);color:var(--mona)} .strip .day{background:var(--day-bg);color:var(--day)} .strip .both{background:var(--both-bg);color:var(--both)}
+.strip button.now{outline:2px solid var(--accent);outline-offset:-2px}
+.strip button.dim{opacity:.3}
+.strip-legend{display:flex;justify-content:space-between;font:12px ui-monospace,Menlo,monospace;color:var(--faint);margin-bottom:18px}
+
+/* ---------- segment cards ---------- */
+.seg{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--who);border-radius:14px;margin:0 0 16px;box-shadow:var(--shadow);transition:opacity .2s,transform .2s}
+.seg.mona{--who:var(--mona);--whobg:var(--mona-bg)} .seg.day{--who:var(--day);--whobg:var(--day-bg)} .seg.both{--who:var(--both);--whobg:var(--both-bg)}
+.seg-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:14px 18px 10px}
+.seg-head .t{font:600 13px ui-monospace,Menlo,monospace;color:var(--faint)}
+.seg-head h3{margin:0;font-size:18px;flex:1 1 260px}
+.rub{width:100%;font-size:13px;color:var(--who);font-weight:600}
+.rows{padding:0 18px 6px}
+.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.9fr);gap:16px;padding:12px 0;border-top:1px dashed var(--line)}
+.do{font-size:14px;color:var(--muted)}
+.lbl{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--faint);margin-bottom:2px}
+.say{font-size:17.5px;line-height:1.6}
+.say .lbl{color:var(--who)}
+.row .who-tag{margin-bottom:4px}
+.seg-foot{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 18px 14px;border-top:1px solid var(--line);font-size:13px;color:var(--faint)}
+.seg.now{outline:3px solid var(--accent);outline-offset:2px}
+.seg-left{font:600 12px ui-monospace,Menlo,monospace;color:var(--accent);margin-left:auto}
+.wait{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;border:1px dashed var(--line);border-radius:14px;padding:12px 16px;margin:0 0 16px;color:var(--muted);background:var(--surface2)}
+.wait.now{outline:3px solid var(--accent);outline-offset:2px}
+.wait .cue{flex-basis:100%;font-size:14.5px}
+.wait .cue b{color:var(--text)}
+.wait button{margin-left:auto}
+body.focus .seg:not(.now),body.focus .wait:not(.now){opacity:.32}
+body.focus .say{font-size:21px}
+body.focus .seg.now{transform:scale(1.005)}
+
+/* ---------- tables & Q&A ---------- */
+.search{width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--text);font-size:15px;margin:4px 0 6px}
+.qa{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--who);border-radius:12px;padding:12px 16px;margin:0 0 10px;box-shadow:var(--shadow)}
+.qa.mona{--who:var(--mona)} .qa.day{--who:var(--day)} .qa.both{--who:var(--both)}
+.qa-q{font-weight:700;font-size:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.where{display:block;margin:6px 0;cursor:copy;text-align:left;border:0;background:none;padding:0}
+.where code{font-size:13.5px}
+.qa-a{margin:4px 0 6px}
+.qa .links{display:flex;flex-wrap:wrap;gap:6px}
+.empty{color:var(--faint);padding:20px 0;text-align:center}
+.tbl{width:100%;border-collapse:separate;border-spacing:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:14.5px}
+.tbl th,.tbl td{padding:10px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+.tbl tr:last-child td{border-bottom:0}
+.tbl th{background:var(--surface2);font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.tbl tr.done td{opacity:.55}
+.tbl input{width:18px;height:18px;accent-color:var(--ok)}
+.score{font-weight:700;margin:6px 0 12px}
+.score b{color:var(--ok)}
+.tbl-wrap{overflow-x:auto}
+
+/* ---------- file map ---------- */
+.flows{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 18px}
+.layer{margin:18px 0 6px;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.node{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--who,var(--faint));border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow)}
+.node.mona{--who:var(--mona)} .node.day{--who:var(--day)}
+.node h4{margin:0;font-size:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.node .path{font:12px ui-monospace,Menlo,monospace;color:var(--faint);overflow-wrap:anywhere}
+.node p{margin:0;font-size:14.5px}
+.node .chip{align-self:flex-start;margin-top:auto}
+.cfg{margin-top:28px;font-size:13.5px;color:var(--muted)}
+.cfg input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:13px ui-monospace,Menlo,monospace;margin-top:4px}
+
+/* ---------- drawer ---------- */
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(820px,100vw);background:var(--surface);border-left:1px solid var(--line);box-shadow:-12px 0 40px rgb(0 0 0/.18);z-index:50;display:flex;flex-direction:column;transform:translateX(102%);transition:transform .25s ease}
+.drawer.open{transform:none}
+.drawer header{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.drawer header h3{margin:0;font-size:15px;flex:1;min-width:0}
+.drawer header h3 small{display:block;font-weight:400;color:var(--muted);font-size:12.5px}
+.drawer iframe{flex:1;border:0;width:100%;background:var(--bg)}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);padding:8px 14px;border-radius:999px;font-size:14px;opacity:0;transition:.2s;z-index:60;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.keys{font-size:12.5px;color:var(--faint);margin-top:30px}
+kbd{font:12px ui-monospace,Menlo,monospace;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--surface)}
+
+@media (max-width:700px){
+  .row{grid-template-columns:1fr;gap:6px}
+  .say{font-size:16.5px}
+  .brand{width:100%}
+  .tbl{font-size:13.5px}
+}
+@media print{.top,.drawer,.strip,.strip-legend,.seg-foot .chip,.keys{display:none} .seg,.qa{break-inside:avoid;box-shadow:none} section[hidden]{display:block}}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="wrap">
+    <div class="bar">
+      <div class="brand">Vectorize · Demo Script<small>SE233 Term Project I · Onsite demo, 14 Oct 2026</small></div>
+      <div class="seg-ctl" role="group" aria-label="Whose part to show">
+        <button data-who="all" aria-pressed="true" title="Show both speakers (B)">Both</button>
+        <button data-who="mona" aria-pressed="false" title="Only Mona's lines (M)">Mona</button>
+        <button data-who="day" aria-pressed="false" title="Only Day's lines (D)">Day</button>
+      </div>
+      <div class="timer" id="timer" title="7-minute timer (S start/pause, R reset)">
+        <span class="clock" id="clock">7:00</span>
+        <button class="icon-btn" id="tPlay" aria-label="Start timer">▶</button>
+        <button class="icon-btn" id="tReset" aria-label="Reset timer">↺</button>
+      </div>
+      <button class="ghost" id="focusBtn" aria-pressed="false" title="Dim everything except the current segment (F)">Focus</button>
+      <button class="icon-btn" id="themeBtn" aria-label="Switch theme" title="Theme">◐</button>
+    </div>
+    <div class="nowtxt" id="nowtxt"></div>
+    <div class="tabs" role="tablist">
+      <button role="tab" data-tab="demo" aria-selected="true">Demo script</button>
+      <button role="tab" data-tab="qa" aria-selected="false">Q&amp;A cheat sheet</button>
+      <button role="tab" data-tab="rubric" aria-selected="false">Rubric checklist</button>
+      <button role="tab" data-tab="map" aria-selected="false">File map</button>
+    </div>
+  </div>
+  <div class="nowline"><i id="nowbar"></i></div>
+</div>
+
+<main class="wrap">
+  <section id="tab-demo">
+    <p class="lead" id="intro"></p>
+    <details class="box" id="setup"><summary>Before you walk in · setup checklist</summary><ul></ul></details>
+    <div class="strip" id="strip" aria-label="Timeline"></div>
+    <div class="strip-legend"><span>0:00</span><span>3:30</span><span>7:00</span></div>
+    <div id="segments"></div>
+    <details class="box" id="fallback" open><summary>If something goes wrong</summary><ul></ul></details>
+    <p class="keys"><kbd>B</kbd> <kbd>M</kbd> <kbd>D</kbd> both / Mona / Day · <kbd>←</kbd> <kbd>→</kbd> previous / next segment · <kbd>F</kbd> focus · <kbd>S</kbd> start/pause timer · <kbd>R</kbd> reset · <kbd>1</kbd>–<kbd>4</kbd> tabs · <kbd>Esc</kbd> close diagram</p>
+  </section>
+
+  <section id="tab-qa" hidden>
+    <p class="lead" id="qaIntro"></p>
+    <p class="lead">Click a <code>File:line</code> to copy it, then press <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd> in IntelliJ and paste to jump straight to that line. The diagram button shows where the file sits in the architecture.</p>
+    <input class="search" id="search" type="search" placeholder="Search questions, files or answers…  (e.g. zip, Task, zoom)">
+    <div id="qaList"></div>
+  </section>
+
+  <section id="tab-rubric" hidden>
+    <p class="lead" id="rubricIntro"></p>
+    <div class="score" id="score"></div>
+    <div class="tbl-wrap"><table class="tbl" id="rubricTbl"><thead><tr><th></th><th>Rubric row</th><th>Pts</th><th>Shown by</th><th>What the lecturer sees</th><th>Proof in code</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <section id="tab-map" hidden>
+    <h2 class="sec" style="margin-top:6px">How the files connect</h2>
+    <p class="lead">Each card is one box in the architecture diagram. <b>Show in diagram</b> opens the diagram beside this page with that box highlighted; click the box there to read what it does, who calls it and what it calls. Colours: <span class="badge mona">Mona</span> frontend, <span class="badge day">Day</span> backend.</p>
+    <div class="flows">
+      <button class="ghost" data-open-diagram="">Open the whole diagram</button>
+      <button class="ghost" data-route="controller~zip">Trace: import (controller → ZIP)</button>
+      <button class="ghost" data-route="controller~autotrace">Trace: preview (controller → autotrace)</button>
+      <button class="ghost" data-route="controller~outdir">Trace: export (controller → output folder)</button>
+      <a class="ghost" id="newTab" href="#" target="_blank" rel="noopener" style="text-decoration:none">Open diagram in new tab ↗</a>
+    </div>
+    <div id="map"></div>
+    <p class="cfg">Note: the diagram was generated at commit 7679ef3, before New Batch was added, so its explanations don't mention <code>newBatch</code>, <code>sameBatch</code> or <code>resetEditor</code> yet.</p>
+    <label class="cfg" style="display:block">Diagram file path (relative to this page, normally <code>../../.archify/…</code>). Only change it if the diagram moves.
+      <input id="diagPath">
+    </label>
+  </section>
+</main>
+
+<aside class="drawer" id="drawer" aria-label="Architecture diagram" aria-hidden="true">
+  <header>
+    <h3 id="drawerTitle">Architecture<small>Click the highlighted box to read what it does</small></h3>
+    <a class="ghost" id="drawerTab" href="#" target="_blank" rel="noopener" style="text-decoration:none">New tab ↗</a>
+    <button class="icon-btn" id="drawerClose" aria-label="Close diagram">✕</button>
+  </header>
+  <iframe id="frame" title="SE233 Vectorize architecture diagram"></iframe>
+</aside>
+<div class="toast" id="toast"></div>
+
+<script>
+const DATA = /*__DATA__*/null;
+// Relative to docs/demo/, so it works in any clone of the repo whatever the folder is called.
+const DEFAULT_DIAG = '../../.archify/architecture-se233-vectorize-20261012-031041/se233-vectorize.html';
+const TOTAL = 420;
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('vz-script:' + k); return v === null ? d : JSON.parse(v); } catch (_) { return d; } },
+  set(k, v) { try { localStorage.setItem('vz-script:' + k, JSON.stringify(v)); } catch (_) {} },
+};
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const md = s => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+const fmt = s => { const a = Math.abs(Math.round(s)); return (s < 0 ? '+' : '') + Math.floor(a / 60) + ':' + String(a % 60).padStart(2, '0'); };
+const NAME = id => (DATA.nodes[id] && (DATA.nodes[id].file.match(/([A-Za-z]+)\.java/) || [])[1]) || ({ autotrace: 'autotrace CLI', presetfile: 'Preset file', outdir: 'Output folder' }[id] || id);
+const DIAG_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1.5" y="2" width="5" height="4" rx="1"/><rect x="9.5" y="10" width="5" height="4" rx="1"/><path d="M4 6v3.5a1 1 0 0 0 1 1h4.5"/></svg>';
+const nodeChips = ids => ids.map(id => `<button class="chip" data-node="${id}" title="Show ${esc(NAME(id))} in the architecture diagram">${DIAG_ICON}${esc(NAME(id))}</button>`).join('');
+
+let who = store.get('who', 'all');
+let current = 0;
+
+/* ---------------- demo tab ---------------- */
+// The first two intro lines (course, team) are already in the header.
+const introParas = DATA.intro.filter(p => !/^SE233|^\*\*Mona\*\*/.test(p));
+$('#intro').innerHTML = introParas.map((p, i) => `<span style="display:block;margin-bottom:8px${/^Assumption/.test(p) ? ';font-style:italic;font-size:14.5px' : ''}">${md(p)}</span>`).join('');
+$('#setup ul').innerHTML = DATA.setup.map(s => `<li>${md(s)}</li>`).join('');
+$('#fallback ul').innerHTML = DATA.fallback.map(s => `<li>${md(s)}</li>`).join('');
+const SEGS = DATA.segments;
+$('#strip').innerHTML = SEGS.map((s, i) => `<button class="${s.who}" data-i="${i}" style="flex:${s.end - s.start}" title="${esc(s.time + ' · ' + s.who.toUpperCase() + ' · ' + s.n + '. ' + s.title)}">${s.n}</button>`).join('');
+
+const speaksIn = (s, w) => w === 'all' || s.who === w || s.rows.some(r => r.who === w);
+const label = w => ({ mona: 'Mona', day: 'Day', both: 'Both' }[w]);
+
+function segHTML(s, i) {
+  const rows = s.rows.filter(r => who === 'all' || !r.who || r.who === who);
+  return `<article class="seg ${s.who}" id="seg-${i}" data-i="${i}">
+    <div class="seg-head"><span class="t">${s.time}</span><span class="badge ${s.who}">${label(s.who)}</span><h3>${s.n}. ${md(s.title)}</h3><span class="seg-left" data-left></span>${s.rubric ? `<span class="rub">Rubric: ${md(s.rubric)}</span>` : ''}</div>
+    <div class="rows">${rows.map(r => `<div class="row">
+      <div class="do">${r.who ? `<span class="badge ${r.who} who-tag">${label(r.who)}</span>` : ''}<span class="lbl">DO</span>${md(r.do)}</div>
+      <div class="say"><span class="lbl">SAY</span>${md(r.say)}</div></div>`).join('')}</div>
+    ${s.nodes.length ? `<div class="seg-foot">Files in this part: ${nodeChips(s.nodes)}</div>` : ''}
+  </article>`;
+}
+
+function renderSegments() {
+  let html = '', i = 0;
+  while (i < SEGS.length) {
+    if (speaksIn(SEGS[i], who)) { html += segHTML(SEGS[i], i); i++; continue; }
+    const from = i;
+    while (i < SEGS.length && !speaksIn(SEGS[i], who)) i++;
+    const a = SEGS[from], b = SEGS[i - 1];
+    const lastSay = (b.rows[b.rows.length - 1] || {}).say || '';
+    const tail = lastSay.replace(/[“”]/g, '').split(/(?<=[.!?])\s+/).filter(Boolean).slice(-1)[0] || '';
+    const other = label(a.who === 'both' ? 'both' : a.who);
+    html += `<div class="wait" data-from="${from}" data-to="${i - 1}">
+      <span class="badge ${a.who}">${other}</span>
+      <span><b>${other} is speaking</b> · ${a.time.split(' – ')[0]} – ${b.time.split(' – ')[1]} · ${from === i - 1 ? 'segment ' + a.n : 'segments ' + a.n + '–' + b.n}</span>
+      <button class="ghost" data-expand="${from}">Show their lines</button>
+      ${i < SEGS.length ? `<span class="cue">Your cue: they finish with <b>“${esc(tail)}”</b></span>` : ''}
+    </div>`;
+  }
+  $('#segments').innerHTML = html;
+  $$('.strip button').forEach(b => b.classList.toggle('dim', !speaksIn(SEGS[+b.dataset.i], who)));
+  markCurrent(false);
+}
+
+function setWho(w) {
+  who = w; store.set('who', w);
+  $$('.seg-ctl button').forEach(b => b.setAttribute('aria-pressed', b.dataset.who === w));
+  renderSegments(); renderQA();
+}
+
+function elOf(i) {
+  return $('#seg-' + i) || $$('.wait').find(w => +w.dataset.from <= i && i <= +w.dataset.to);
+}
+function markCurrent(scroll) {
+  $$('.seg.now,.wait.now').forEach(e => e.classList.remove('now'));
+  $$('.strip button').forEach(b => b.classList.toggle('now', +b.dataset.i === current));
+  const el = elOf(current);
+  if (el) { el.classList.add('now'); if (scroll) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  updateNow();
+}
+function go(i, scroll = true) { current = Math.max(0, Math.min(SEGS.length - 1, i)); markCurrent(scroll); }
+function step(d) {
+  // Jump over segments the selected speaker does not speak in, but keep their wait bar reachable.
+  let i = current + d;
+  if (who !== 'all') {
+    const el = elOf(current);
+    if (el && el.classList.contains('wait')) i = d > 0 ? +el.dataset.to + 1 : +el.dataset.from - 1;
+  }
+  go(i);
+}
+
+/* ---------------- timer ---------------- */
+let elapsed = store.get('elapsed', 0), running = false, last = 0, raf = 0;
+function tick(t) {
+  if (running) { elapsed += (t - last) / 1000; last = t; raf = requestAnimationFrame(tick); }
+  const left = TOTAL - elapsed;
+  $('#clock').textContent = fmt(left);
+  $('#timer').classList.toggle('over', left < 0);
+  $('#nowbar').style.width = Math.min(100, elapsed / TOTAL * 100) + '%';
+  if (running) {
+    const i = SEGS.findIndex(s => elapsed < s.end);
+    const idx = i < 0 ? SEGS.length - 1 : i;
+    if (idx !== current) go(idx);
+    else updateNow();
+  }
+}
+function updateNow() {
+  const s = SEGS[current];
+  const inSeg = elapsed >= s.start && elapsed < s.end;
+  $$('[data-left]').forEach(e => e.textContent = '');
+  const card = $('#seg-' + current);
+  if (card && (running || elapsed > 0) && inSeg) card.querySelector('[data-left]').textContent = fmt(s.end - elapsed) + ' left';
+  const next = SEGS.slice(current + 1).find(x => who === 'all' || speaksIn(x, who));
+  $('#nowtxt').innerHTML = `Now: <span class="badge ${s.who}">${label(s.who)}</span> <b>${s.n}. ${md(s.title)}</b> · ${s.time}` +
+    (next ? ` &nbsp;→ next${who === 'all' ? '' : ' for you'}: <b>${next.n}. ${md(next.title)}</b> at ${next.time.split(' – ')[0]}` : '');
+}
+function play() {
+  running = !running;
+  $('#tPlay').textContent = running ? '❚❚' : '▶';
+  $('#tPlay').setAttribute('aria-label', running ? 'Pause timer' : 'Start timer');
+  if (running) { last = performance.now(); raf = requestAnimationFrame(tick); } else { cancelAnimationFrame(raf); store.set('elapsed', elapsed); }
+}
+function reset() { if (running) play(); elapsed = 0; store.set('elapsed', 0); tick(0); go(0); }
+
+/* ---------------- Q&A ---------------- */
+function qaCard(q, kind) {
+  const where = q.where ? `<button class="where" data-copy="${esc(q.where.replace(/`/g, ''))}" title="Click to copy">${md(q.where)}</button>` : '';
+  return `<div class="qa ${q.who}"><div class="qa-q"><span class="badge ${q.who}">${label(q.who)}</span>${md(q.q)}</div>
+    ${where}<div class="qa-a">${md(q.say || q.a)}</div>
+    ${q.nodes.length ? `<div class="links">${nodeChips(q.nodes)}</div>` : ''}</div>`;
+}
+function renderQA() {
+  const term = ($('#search').value || '').trim().toLowerCase();
+  const show = q => (who === 'all' || q.who === who || q.who === 'both') && (!term || JSON.stringify(q).toLowerCase().includes(term));
+  const groups = [['Mona: “where is…?” (frontend)', DATA.qa.mona], ['Day: “where is…?” (backend)', DATA.qa.day], ['Likely concept questions', DATA.qa.concept]];
+  let html = '';
+  for (const [title, list] of groups) {
+    const items = list.filter(show);
+    if (items.length) html += `<h2 class="sec">${title}</h2>` + items.map(q => qaCard(q)).join('');
+  }
+  $('#qaList').innerHTML = html || '<p class="empty">No questions match.</p>';
+}
+$('#qaIntro').innerHTML = md(DATA.qaIntro);
+$('#search').addEventListener('input', renderQA);
+
+/* ---------------- rubric ---------------- */
+const ticked = store.get('ticks', {});
+$('#rubricIntro').innerHTML = md(DATA.rubricIntro || '');
+function renderRubric() {
+  $('#rubricTbl tbody').innerHTML = DATA.rubric.map((r, i) => {
+    const by = r.by.split(/,\s*/).map(b => `<span class="badge ${b.toLowerCase()}">${esc(b)}</span>`).join(' ');
+    return `<tr class="${ticked[i] ? 'done' : ''}"><td><input type="checkbox" data-tick="${i}" ${ticked[i] ? 'checked' : ''} aria-label="Shown: ${esc(r.row)}"></td>
+      <td><b>${md(r.row)}</b></td><td>${esc(r.pts)}</td><td>${by}</td><td>${md(r.sees)}</td><td>${md(r.proof)}</td></tr>`;
+  }).join('');
+  const max = DATA.rubric.reduce((a, r) => a + (parseInt(r.pts) || 0), 0);
+  const got = DATA.rubric.reduce((a, r, i) => a + (ticked[i] ? parseInt(r.pts) || 0 : 0), 0);
+  $('#score').innerHTML = `Shown in rehearsal: <b>${got}</b> / ${max} objective points <button class="ghost" id="clearTicks" style="margin-left:8px">Clear ticks</button>`;
+}
+document.addEventListener('change', e => {
+  const t = e.target.dataset && e.target.dataset.tick;
+  if (t !== undefined) { ticked[t] = e.target.checked; store.set('ticks', ticked); renderRubric(); }
+});
+
+/* ---------------- file map ---------------- */
+const LAYERS = [
+  ['Frontend: startup, screen and events', ['app', 'view', 'controller', 'presets']],
+  ['Shared state (model)', ['session']],
+  ['Concurrency', ['coordinator', 'policy']],
+  ['Import', ['importer', 'zip']],
+  ['Vectorization pipeline', ['vectorization', 'preprocessor', 'background', 'colors', 'engine', 'validator']],
+  ['Export', ['export']],
+  ['Outside our code', ['autotrace', 'presetfile', 'outdir']],
+];
+$('#map').innerHTML = LAYERS.map(([t, ids]) => `<div class="layer">${t}</div><div class="grid">${ids.filter(id => DATA.nodes[id]).map(id => {
+  const n = DATA.nodes[id], own = (n.own || '').toLowerCase();
+  return `<div class="node ${own}"><h4>${esc(NAME(id))}${own ? `<span class="badge ${own}">${esc(n.own)}</span>` : ''}</h4>
+    <div class="path">${esc(n.file.replace('src/main/java/se233/vectorize/', ''))}</div><p>${md(n.what)}</p>
+    <button class="chip" data-node="${id}">${DIAG_ICON}Show in diagram</button></div>`;
+}).join('')}</div>`).join('');
+
+/* ---------------- diagram drawer ---------------- */
+let diagPath = store.get('diag-in-repo', DEFAULT_DIAG);
+$('#diagPath').value = diagPath;
+$('#diagPath').addEventListener('change', e => { diagPath = e.target.value.trim() || DEFAULT_DIAG; store.set('diag-in-repo', diagPath); $('#frame').removeAttribute('src'); syncLinks(); });
+function theme() {
+  const t = document.documentElement.dataset.theme;
+  return t || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+}
+const diagURL = hash => diagPath + '?theme=' + theme() + (hash ? '#' + hash : '');
+function syncLinks() { $('#newTab').href = diagURL(''); }
+function openDiagram(hash, title) {
+  const url = diagURL(hash);
+  // Only the #fragment changes between boxes, so the diagram does not reload.
+  $('#frame').setAttribute('src', url);
+  $('#drawerTab').href = url;
+  $('#drawerTitle').innerHTML = esc(title) + '<small>Click the highlighted box to read what it does and how it connects</small>';
+  $('#drawer').classList.add('open');
+  $('#drawer').setAttribute('aria-hidden', 'false');
+}
+function closeDiagram() { $('#drawer').classList.remove('open'); $('#drawer').setAttribute('aria-hidden', 'true'); }
+$('#drawerClose').addEventListener('click', closeDiagram);
+syncLinks();
+
+/* ---------------- tabs, theme, events ---------------- */
+function setTab(name) {
+  $$('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === name));
+  $$('main > section').forEach(s => s.hidden = s.id !== 'tab-' + name);
+  store.set('tab', name);
+  window.scrollTo({ top: 0 });
+}
+$$('.tabs button').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+$$('.seg-ctl button').forEach(b => b.addEventListener('click', () => setWho(b.dataset.who)));
+$('#tPlay').addEventListener('click', play);
+$('#tReset').addEventListener('click', reset);
+function setFocus(on) { document.body.classList.toggle('focus', on); $('#focusBtn').setAttribute('aria-pressed', on); store.set('focus', on); if (on) markCurrent(true); }
+$('#focusBtn').addEventListener('click', () => setFocus(!document.body.classList.contains('focus')));
+$('#themeBtn').addEventListener('click', () => {
+  const next = theme() === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next; store.set('theme', next); syncLinks();
+  if ($('#frame').getAttribute('src')) $('#frame').setAttribute('src', diagURL(($('#frame').getAttribute('src').split('#')[1]) || ''));
+});
+const savedTheme = store.get('theme', null); if (savedTheme) document.documentElement.dataset.theme = savedTheme;
+
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 1600); }
+
+document.addEventListener('click', e => {
+  const n = e.target.closest('[data-node]');
+  if (n) { openDiagram('focus=' + n.dataset.node, NAME(n.dataset.node)); return; }
+  const r = e.target.closest('[data-route]');
+  if (r) { const [a, b] = r.dataset.route.split('~'); openDiagram('route=' + r.dataset.route, 'Path: ' + NAME(a) + ' → ' + NAME(b)); return; }
+  if (e.target.closest('[data-open-diagram]')) { openDiagram('', 'Architecture'); return; }
+  const c = e.target.closest('[data-copy]');
+  if (c) {
+    const text = c.dataset.copy;
+    (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => toast('Copied: ' + text), () => toast(text));
+    return;
+  }
+  const x = e.target.closest('[data-expand]');
+  if (x) { setWho('all'); go(+x.dataset.expand); return; }
+  if (e.target.id === 'clearTicks') { for (const k in ticked) delete ticked[k]; store.set('ticks', ticked); renderRubric(); return; }
+  const s = e.target.closest('.strip button');
+  if (s) { setTab('demo'); go(+s.dataset.i); return; }
+  const card = e.target.closest('.seg, .wait');
+  if (card && !e.target.closest('button,a')) { current = +(card.dataset.i ?? card.dataset.from); markCurrent(false); }
+});
+document.addEventListener('keydown', e => {
+  if (e.target.matches('input, textarea') || e.metaKey || e.ctrlKey || e.altKey) { if (e.key === 'Escape') e.target.blur(); return; }
+  const k = e.key.toLowerCase();
+  if (k === 'escape') closeDiagram();
+  else if (k === 'b') setWho('all'); else if (k === 'm') setWho('mona'); else if (k === 'd') setWho('day');
+  else if (k === 'arrowright' || k === 'j') { e.preventDefault(); setTab('demo'); step(1); }
+  else if (k === 'arrowleft' || k === 'k') { e.preventDefault(); setTab('demo'); step(-1); }
+  else if (k === 'f') setFocus(!document.body.classList.contains('focus'));
+  else if (k === 's') play(); else if (k === 'r') reset();
+  else if ('1234'.includes(k)) setTab(['demo', 'qa', 'rubric', 'map'][+k - 1]);
+});
+
+/* ---------------- init ---------------- */
+setWho(who);
+renderRubric();
+setTab(store.get('tab', 'demo'));
+if (store.get('focus', false)) setFocus(true);
+const startIdx = SEGS.findIndex(s => elapsed < s.end);
+current = startIdx < 0 ? SEGS.length - 1 : startIdx;
+tick(0); markCurrent(false);
+</script>
+</body>
+</html>
