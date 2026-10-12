@@ -46,6 +46,11 @@ public final class ZipImportService implements AutoCloseable {
                 if (entry.isDirectory()) {
                     continue;
                 }
+                // macOS Finder adds __MACOSX/._name.jpg metadata files; they are not images.
+                String baseName = Paths.get(entry.getName().replace('\\', '/')).getFileName().toString();
+                if (entry.getName().startsWith("__MACOSX/") || baseName.startsWith("._")) {
+                    continue;
+                }
                 if (!ImageImportService.isSupportedImage(entry.getName())) {
                     continue;
                 }

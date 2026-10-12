@@ -50,9 +50,14 @@ public final class ImageImportService {
                 if(isZip) {
                     List<Path> extracted = zip.extract(path);
                     for (Path imagePath : extracted) {
-                        validateImage(imagePath);
-                        documents.add(new ImageDocument(imagePath,
-                                imagePath.getFileName().toString()));
+                        // One corrupt member must not erase its valid siblings.
+                        try {
+                            validateImage(imagePath);
+                            documents.add(new ImageDocument(imagePath,
+                                    imagePath.getFileName().toString()));
+                        } catch (ConversionException e) {
+                            errors.add(path.getFileName() + " → " + e.getMessage());
+                        }
                     }
                 } else if (isSupportedImage(path.toString())) {
                     validateImage(path);
