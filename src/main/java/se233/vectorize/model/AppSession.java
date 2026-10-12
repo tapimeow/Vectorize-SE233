@@ -14,6 +14,12 @@ public final class AppSession {
     public void addAll(List<ImageDocument> values) {
         documents.addAll(values);
     }
+    /** Additional feature (New Batch): forget every document and reset the
+     * selection so a fresh import starts from the first image. FX thread only. */
+    public void clear() {
+        documents.clear();
+        selectedIndex = 0;
+    }
     public boolean isEmpty() {
         return documents.isEmpty();
     }

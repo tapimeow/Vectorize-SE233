@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /** Phase 5 controller: translate FX gestures into state changes/background jobs. */
@@ -33,6 +34,7 @@ public final class VectorizeController {
     private String displayedSvg;
     private String notice = "";
     private final List<String> exportLog = new ArrayList<>();
+    private int batchId;   // bumped by New Batch; callbacks from an older batch are ignored
 
     public VectorizeController(VectorizeView view, ProcessingCoordinator coordinator,
                               ImageImportService importer) {
@@ -93,6 +95,9 @@ public final class VectorizeController {
         });
         view.savePreset.setOnAction(e -> savePreset());
         view.loadPreset.setOnAction(e -> loadPreset());
+
+        // Additional feature: go back to the drop screen without restarting the app
+        view.newBatch.setOnAction(e -> newBatch());
     }
     /**
      * Begin asynchronous input handling, preserving valid siblings after bad files.
@@ -110,7 +115,7 @@ public final class VectorizeController {
         view.dropStatus.setText("Importing " + paths.size() + " item(s)...");
 
         coordinator.importAsync(paths, importer,
-                result -> {
+                sameBatch(result -> {
                     if (result.documents().isEmpty()) {
                         // 2. All files failed -> stay on drop screen and display the errors
                         String errorText = "Import failed:\n" + String.join("\n", result.errors());
@@ -119,8 +124,8 @@ public final class VectorizeController {
                         // 3. Successful documents found -> add to session and switch to editor
                         session.addAll(result.documents());
                         view.showEditor();
-                        coordinator.preprocess(result.documents(), this::showSelected,
-                                status -> showBatch("Preparing previews", status));
+                        coordinator.preprocess(result.documents(), sameBatch(this::showSelected),
+                                sameBatch(status -> showBatch("Preparing previews", status)));
 
                         // Reset drop status back to its default instruction text for next time
                         view.dropStatus.setText("JPG, PNG, multiple images, or a ZIP archive");
@@ -133,11 +138,11 @@ public final class VectorizeController {
                         }
                         showSelected();
                     }
-                },
-                errorMessage -> {
+                }),
+                sameBatch(errorMessage -> {
                     // 4. Batch-level failure -> stay on drop screen, show error in dropStatus
                     view.dropStatus.setText("Error: " + errorMessage);
-                }
+                })
         );
     }
 
@@ -158,7 +163,7 @@ public final class VectorizeController {
         if (settings.equals(document.settings())) return;
         document.settings(settings);
         showSelected();
-        coordinator.refresh(document, this::showSelected);
+        coordinator.refresh(document, sameBatch(this::showSelected));
     }
 
     /** Redraw everything that depends on the selected document. */
@@ -234,13 +239,13 @@ public final class VectorizeController {
 
         exportLog.clear();
         coordinator.exportAll(session.documents(), folder.toPath(),
-                status -> showBatch("Exporting", status),
-                message -> {
+                sameBatch(status -> showBatch("Exporting", status)),
+                sameBatch(message -> {
                     exportLog.add(message);
                     int from = Math.max(0, exportLog.size() - 4);
                     notice = String.join("\n", exportLog.subList(from, exportLog.size()));
                     showSelected();
-                });
+                }));
     }
 
     private static FileChooser presetChooser(String title) {
@@ -271,8 +276,8 @@ public final class VectorizeController {
                     }
                     return target;
                 },
-                saved -> { notice = "Preset saved: " + saved.getFileName(); showSelected(); },
-                error -> { notice = error; showSelected(); });
+                sameBatch(saved -> { notice = "Preset saved: " + saved.getFileName(); showSelected(); }),
+                sameBatch(error -> { notice = error; showSelected(); }));
     }
 
     /** Read a preset off FX and apply it to the document that was selected at click time. */
@@ -289,14 +294,43 @@ public final class VectorizeController {
                         throw new ConversionException(ConversionException.Kind.INPUT, e.getMessage(), e);
                     }
                 },
-                settings -> {
+                sameBatch(settings -> {
                     notice = "Preset loaded: " + file.getFileName();
                     if (!settings.equals(target.settings())) {
                         target.settings(settings);
-                        coordinator.refresh(target, this::showSelected);
+                        coordinator.refresh(target, sameBatch(this::showSelected));
                     }
                     showSelected();
-                },
-                error -> { notice = error; showSelected(); });
+                }),
+                sameBatch(error -> { notice = error; showSelected(); }));
+    }
+
+    /**
+     * Additional feature: return to the drop screen so a new batch can be imported
+     * without restarting the app. Cancels running previews/exports, forgets the
+     * current documents, and bumps batchId so late callbacks from the old batch
+     * (cancelled previews, a still-running import) cannot touch the new one. FX only.
+     */
+    private void newBatch() {
+        batchId++;
+        coordinator.cancelActive();
+        session.clear();
+        displayedDocument = null;
+        displayedSvg = null;
+        notice = "";
+        exportLog.clear();
+        view.resetEditor();
+        view.showDrop();
+    }
+
+    /** Wrap a callback so it only runs if no New Batch happened since it was scheduled. */
+    private Runnable sameBatch(Runnable action) {
+        int id = batchId;
+        return () -> { if (id == batchId) action.run(); };
+    }
+
+    private <T> Consumer<T> sameBatch(Consumer<T> action) {
+        int id = batchId;
+        return value -> { if (id == batchId) action.accept(value); };
     }
 }

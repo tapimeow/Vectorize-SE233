@@ -44,6 +44,7 @@ public final class VectorizeView {
     public final Button back = new Button("Back"), next = new Button("Next"), exportAll = new Button("Export All");
     public final Button savePreset = new Button("Save"), loadPreset = new Button("Load");
     public final Button cancelProcessing = new Button("Cancel Processing");
+    public final Button newBatch = new Button("New Batch");
     public final ComboBox<DetailLevel> detail = new ComboBox<>();
     public final ComboBox<ColorMode> colorMode = new ComboBox<>();
     public final Spinner<Integer> customColors = new Spinner<>(new SpinnerValueFactory.IntegerSpinnerValueFactory(2, 5, 2));
@@ -260,7 +261,8 @@ public final class VectorizeView {
                 spacer(),
                 navRow,
                 exportAll,
-                section("Preset"), presetRow);
+                section("Preset"), presetRow,
+                newBatch);
 
         settings.setPadding(new Insets(15));
         settings.setPrefWidth(260);
@@ -271,11 +273,13 @@ public final class VectorizeView {
         colorMode.setMaxWidth(Double.MAX_VALUE);
         customColors.setMaxWidth(Double.MAX_VALUE);
         exportAll.setMaxWidth(Double.MAX_VALUE);
+        newBatch.setMaxWidth(Double.MAX_VALUE);
 
         // Apply button styles from DESIGN.md
         exportAll.setStyle(PRIMARY_BTN);
         savePreset.setStyle(TOOL_BTN);
         loadPreset.setStyle(TOOL_BTN);
+        newBatch.setStyle(WARN_BTN);
 
         // Margin around the settings panel and placement on the right
         BorderPane.setMargin(settings, new Insets(26, 15, 15, 0));
@@ -452,6 +456,23 @@ public final class VectorizeView {
     public void showEditor() { stage.getScene().setRoot(editorRoot); }
 
     public void showDrop() { stage.getScene().setRoot(dropRoot); }
+
+    /** Additional feature (New Batch): blank the editor so the next batch never
+     * shows the previous batch's image, SVG, palette or status. FX only. */
+    public void resetEditor() {
+        showOriginal(null);
+        clearSvg();
+        detectedPalette.getChildren().clear();
+        filename.setText("");
+        fileStatus.setText("");
+        operationMessage.setText("");
+        batchStatus.setText("Drop images to start");
+        batchProgress.setProgress(0);
+        fileProgress.setProgress(0);
+        cancelProcessing.setDisable(true);
+        dropStatus.setText("JPG, PNG, multiple images, or a ZIP archive");
+        zoomToFit();
+    }
 
     public Stage stage() { return stage; }
 

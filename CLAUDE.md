@@ -72,6 +72,27 @@ explicit per-change ask, and Day's files stay fully off-limits. If Day ever
 wants an equivalent personal file, that's a separate, symmetric setup on
 Day's side — this repo's shared policy above is unaffected either way.
 
+## Presentation script for the onsite demo
+
+There is a demo script for the October 14 presentation:
+`../Vectorize-Demo-Script.docx` (one directory above this repo, in
+`04_Term_Project/`, so it is not tracked by git). It has three parts: the
+7-minute live demo (DO/SAY table per segment, who presents what), a rubric
+coverage checklist, and a Q&A cheat sheet that maps "where is X?" to exact
+`File.java:line` references.
+
+Two additional features are demonstrated (rubric row "Additional feature",
+FR-019): **Save/Load presets** (`PresetService`, Mona's segment 5) and
+**New Batch**, a right-panel button that cancels running work, clears the
+session and returns to the drop screen without restarting the app
+(`VectorizeController.newBatch`/`sameBatch`, `VectorizeView.resetEditor`,
+`AppSession.clear`; Day's segment 10).
+
+When a change adds or alters a user-visible feature, or moves code that the
+Q&A cheat sheet cites by line number, update the script in the same session
+(or tell the human it is now out of date). Line numbers there must match the
+current `main`.
+
 ## The coursebook's own AI policy (read this before "just implement it")
 
 The coursebook has a dedicated "AI Advisory" box in every one of chapters
