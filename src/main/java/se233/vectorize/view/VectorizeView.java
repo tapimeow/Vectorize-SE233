@@ -227,13 +227,14 @@ public final class VectorizeView {
         // Layers in vectorPane (checker behind vector)
         vectorPane.getChildren().addAll(checker, vector);
         vectorPane.setMinSize(0, 0);
+        vector.setMinSize(0, 0);
         // Trigger drawChecker when dimensions change
         vectorPane.widthProperty().addListener((obs, oldV, newV) -> {
-            if (fitMode) applyFitZoom();
+            if (fitMode) applyFitZoom(); else applyZoom(zoom);
             drawChecker();
         });
         vectorPane.heightProperty().addListener((obs, oldV, newV) -> {
-            if (fitMode) applyFitZoom();
+            if (fitMode) applyFitZoom(); else applyZoom(zoom);
             drawChecker();
         });
 
@@ -578,6 +579,17 @@ public final class VectorizeView {
 
     private void applyZoom(double value) {
         vector.setZoom(value);
+        // WebView always draws the SVG from its top-left corner, so size the
+        // WebView to the scaled SVG and let vectorPane (a StackPane) center it,
+        // the same way originalPane centers the ImageView. Past the pane size
+        // it fills the pane and scrolls instead. The +2 px stops WebKit's
+        // rounding from showing scrollbars on an exact fit.
+        double availW = Math.max(0, vectorPane.getWidth() - 20);
+        double availH = Math.max(0, vectorPane.getHeight() - 20);
+        double w = Math.min(Math.ceil(svgWidth * value) + 2, availW);
+        double h = Math.min(Math.ceil(svgHeight * value) + 2, availH);
+        vector.setPrefSize(w, h);
+        vector.setMaxSize(w, h);
     }
 
     public double zoom() { return zoom; }
@@ -605,9 +617,10 @@ public final class VectorizeView {
             return;
         }
 
-        double scaleX = availW / svgWidth;
-        double scaleY = availH / svgHeight;
-        double fitScale = Math.min(scaleX, scaleY) * 0.98;
+        // Leave 2 px for the WebView rounding slack in applyZoom
+        double scaleX = (availW - 2) / svgWidth;
+        double scaleY = (availH - 2) / svgHeight;
+        double fitScale = Math.min(scaleX, scaleY);
 
         zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, fitScale));
         applyZoom(zoom);
