@@ -177,6 +177,68 @@ for kind, val in blocks:
                     data['qa'][qa_target].append({'q': r[0], 'where': r[1], 'say': r[2], 'who': qa_target,
                                                   'nodes': qa_nodes(r[0])})
 
+# ---------- demo input files (docs/demo/demo-files, named <segment>-<who>-<what>) ----------
+FILES_DIR = os.path.join(DEMO, 'demo-files')
+FILE_NOTES = {
+    '02-Mona-drop-a-logo.png': 'Flat logo, 5 colours on white. Used again in 4 for Detail, Colors and Remove Background.',
+    '02-Mona-drop-b-photo.jpg': 'Photo-like JPG. Don\'t switch it to Unlimited (8 MB SVG, slow preview).',
+    '02-Mona-drop-c-transparent.png': 'Heart on a transparent background.',
+    '05-Mona-preset-logo-style.properties': 'Not there before the demo: Mona creates it with Save (Preset), then Loads it.',
+    '06-Day-zip-images.zip': 'Total goes from 3 to 7. The app names them 0_badge.png, 1_leaf.jpg, 2_house.png, 3_sunset.jpg. readme.txt is skipped.',
+    '09-Day-export-out': 'Empty folder to pick in Export All. Must be empty before the demo.',
+    '10-Day-error-a-broken.jpg': 'Text renamed to .jpg: "Unsupported image format".',
+    '10-Day-error-b-notes.txt': 'Not an image: "unsupported file type".',
+    '10-Day-error-c-good-star.png': 'Always drop with the two bad files, or the errors stay hidden on the drop screen.',
+    'qa-zip-one-bad-member.zip': 'One corrupt member: the 2 good images still import.',
+    'qa-zip-slip.zip': 'Zip Slip: whole ZIP rejected, "Unsafe entry path ... ../../evil.png".',
+    'qa-zip-no-images.zip': '"No supported images found".',
+    'qa-preset-broken.properties': 'Load (Preset): "customColors must be between 2 and 5", app keeps running.',
+}
+# Segments that reuse a file dropped earlier, so every step shows what is on screen.
+FILE_REUSE = {3: ['02-Mona-drop-a-logo.png', '02-Mona-drop-b-photo.jpg', '02-Mona-drop-c-transparent.png'],
+              4: ['02-Mona-drop-a-logo.png'], 8: ['02-Mona-drop-b-photo.jpg', '02-Mona-drop-a-logo.png']}
+
+
+def file_entry(path, rel, seg, virtual=False):
+    name = os.path.basename(path)
+    who = 'mona' if '-Mona-' in name else 'day' if '-Day-' in name else 'both'
+    entry = {'name': name, 'path': rel, 'seg': seg, 'who': who, 'note': FILE_NOTES.get(name, ''), 'kind': 'file'}
+    if virtual:
+        entry['kind'] = 'created'
+    elif os.path.isdir(path):
+        entry['kind'] = 'folder'
+    elif name.lower().endswith('.zip'):
+        entry['kind'] = 'zip'
+        entry['members'] = [n for n in zipfile.ZipFile(path).namelist() if not n.endswith('/')]
+    else:
+        head = open(path, 'rb').read(4)
+        if head.startswith(b'\x89PNG') or head.startswith(b'\xff\xd8'):
+            entry['kind'] = 'image'
+            # PNG colour types 4 and 6 carry alpha; only those get a checkerboard behind the thumbnail.
+            entry['alpha'] = head.startswith(b'\x89PNG') and open(path, 'rb').read(26)[25] in (4, 6)
+    return entry
+
+
+files = []
+if os.path.isdir(FILES_DIR):
+    for name in sorted(os.listdir(FILES_DIR)):
+        full = os.path.join(FILES_DIR, name)
+        m = re.match(r'^(\d+)-', name)
+        if name.startswith(('.', '00-')) or not m:
+            continue
+        if int(m.group(1)) == 99 and os.path.isdir(full):
+            for sub in sorted(os.listdir(full)):
+                if not sub.startswith('.'):
+                    files.append(file_entry(os.path.join(full, sub), f'demo-files/{name}/{sub}', 99))
+            continue
+        files.append(file_entry(full, f'demo-files/{name}', int(m.group(1))))
+    preset = '05-Mona-preset-logo-style.properties'
+    if not any(f['name'] == preset for f in files):
+        files.append(file_entry(preset, f'demo-files/{preset}', 5, virtual=True))
+    files.sort(key=lambda f: (f['seg'], f['name']))
+data['files'] = files
+data['fileReuse'] = FILE_REUSE
+
 nodes = json.load(open(NODES))
 if 'session' in nodes:
     nodes['session']['own'] = 'Day'
@@ -187,6 +249,7 @@ assert data['qa']['mona'] and data['qa']['day'] and data['qa']['concept']
 html = open(TEMPLATE, encoding='utf-8').read().replace('/*__DATA__*/null', json.dumps(data, ensure_ascii=False))
 open(OUT, 'w', encoding='utf-8').write(html)
 print('segments', len(data['segments']), 'qa', {k: len(v) for k, v in data['qa'].items()},
-      'rubric', len(data['rubric']), 'setup', len(data['setup']), 'fallback', len(data['fallback']))
+      'rubric', len(data['rubric']), 'setup', len(data['setup']), 'fallback', len(data['fallback']),
+      'files', len(data['files']))
 missing = [q['q'] for k in ('mona', 'day') for q in data['qa'][k] if not q['nodes']]
 print('qa rows without diagram link:', missing)

@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
 <title>Vectorize Demo Script</title>
 <style>
 :root{
@@ -140,6 +141,26 @@ body.focus .seg.now{transform:scale(1.005)}
 .cfg{margin-top:28px;font-size:13.5px;color:var(--muted)}
 .cfg input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:13px ui-monospace,Menlo,monospace;margin-top:4px}
 
+/* ---------- demo files ---------- */
+a.file{text-decoration:none} a.file code{text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--code) 45%,transparent);text-underline-offset:2px}
+a.file:hover code{background:color-mix(in srgb,var(--code-bg) 60%,var(--accent) 18%)}
+.seg-files{padding:4px 18px 14px}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.fcard{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--who,var(--faint));border-radius:10px;overflow:hidden;color:inherit;text-decoration:none;min-width:0}
+.fcard.mona{--who:var(--mona)} .fcard.day{--who:var(--day)}
+a.fcard:hover{border-color:var(--accent)}
+.thumb{height:110px;display:grid;place-items:center;background:var(--surface2);font-size:34px;color:var(--faint)}
+.thumb.checker{background:repeating-conic-gradient(#d6d3d1 0 25%,#fff 0 50%) 0 0/16px 16px}
+.thumb img{max-width:100%;max-height:110px;display:block}
+.fbody{padding:8px 10px 10px;display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted)}
+.fname{font:600 12px/1.35 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text);overflow-wrap:anywhere}
+.fbody .tag{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--faint)}
+.fbody ul{margin:2px 0 0;padding-left:16px;font:11.5px ui-monospace,Menlo,monospace}
+.fcard.again{opacity:.85} .fcard.again .thumb{height:80px} .fcard.again .thumb img{max-height:80px}
+.fsec{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:24px 0 10px}
+.fsec h3{margin:0;font-size:17px}
+.fsec .t{font:600 13px ui-monospace,Menlo,monospace;color:var(--faint)}
+
 /* ---------- drawer ---------- */
 .drawer{position:fixed;top:0;right:0;bottom:0;width:min(820px,100vw);background:var(--surface);border-left:1px solid var(--line);box-shadow:-12px 0 40px rgb(0 0 0/.18);z-index:50;display:flex;flex-direction:column;transform:translateX(102%);transition:transform .25s ease}
 .drawer.open{transform:none}
@@ -185,6 +206,7 @@ kbd{font:12px ui-monospace,Menlo,monospace;border:1px solid var(--line);border-b
       <button role="tab" data-tab="qa" aria-selected="false">Q&amp;A cheat sheet</button>
       <button role="tab" data-tab="rubric" aria-selected="false">Rubric checklist</button>
       <button role="tab" data-tab="map" aria-selected="false">File map</button>
+      <button role="tab" data-tab="files" aria-selected="false">Demo files</button>
     </div>
   </div>
   <div class="nowline"><i id="nowbar"></i></div>
@@ -198,7 +220,7 @@ kbd{font:12px ui-monospace,Menlo,monospace;border:1px solid var(--line);border-b
     <div class="strip-legend"><span>0:00</span><span>3:30</span><span>7:00</span></div>
     <div id="segments"></div>
     <details class="box" id="fallback" open><summary>If something goes wrong</summary><ul></ul></details>
-    <p class="keys"><kbd>B</kbd> <kbd>M</kbd> <kbd>D</kbd> both / Mona / Day · <kbd>←</kbd> <kbd>→</kbd> previous / next segment · <kbd>F</kbd> focus · <kbd>S</kbd> start/pause timer · <kbd>R</kbd> reset · <kbd>1</kbd>–<kbd>4</kbd> tabs · <kbd>Esc</kbd> close diagram</p>
+    <p class="keys"><kbd>B</kbd> <kbd>M</kbd> <kbd>D</kbd> both / Mona / Day · <kbd>←</kbd> <kbd>→</kbd> previous / next segment · <kbd>F</kbd> focus · <kbd>S</kbd> start/pause timer · <kbd>R</kbd> reset · <kbd>1</kbd>–<kbd>5</kbd> tabs · <kbd>Esc</kbd> close diagram</p>
   </section>
 
   <section id="tab-qa" hidden>
@@ -212,6 +234,12 @@ kbd{font:12px ui-monospace,Menlo,monospace;border:1px solid var(--line);border-b
     <p class="lead" id="rubricIntro"></p>
     <div class="score" id="score"></div>
     <div class="tbl-wrap"><table class="tbl" id="rubricTbl"><thead><tr><th></th><th>Rubric row</th><th>Pts</th><th>Shown by</th><th>What the lecturer sees</th><th>Proof in code</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <section id="tab-files" hidden>
+    <h2 class="sec" style="margin-top:6px">Which file to drag, step by step</h2>
+    <p class="lead">These are the files in <code>docs/demo/demo-files</code>. Each name starts with the segment number and who drags it, so Finder sorted by Name is the demo order. Click a card to open or download the file. Faded cards are files that are already in the app from an earlier step.</p>
+    <div id="fileList"></div>
   </section>
 
   <section id="tab-map" hidden>
@@ -254,7 +282,16 @@ const store = {
   set(k, v) { try { localStorage.setItem('vz-script:' + k, JSON.stringify(v)); } catch (_) {} },
 };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const md = s => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+const FILES = DATA.files || [];
+const FILE_BY_NAME = Object.fromEntries(FILES.map(f => [f.name, f]));
+// A `code` span that names a demo file becomes a link to it; the folder name opens the Demo files tab.
+const codeHTML = c => {
+  const f = FILE_BY_NAME[c];
+  if (f && f.kind !== 'created' && f.kind !== 'folder') return `<a class="file" href="${esc(f.path)}" target="_blank" rel="noopener" title="Open ${esc(c)}"><code>${c}</code></a>`;
+  if (f || /demo-files$|^00-START-HERE\.md$/.test(c)) return `<a class="file" href="#files" data-tab-link="files" title="Show the demo files"><code>${c}</code></a>`;
+  return `<code>${c}</code>`;
+};
+const md = s => esc(s).replace(/`([^`]+)`/g, (_, c) => codeHTML(c)).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 const fmt = s => { const a = Math.abs(Math.round(s)); return (s < 0 ? '+' : '') + Math.floor(a / 60) + ':' + String(a % 60).padStart(2, '0'); };
 const NAME = id => (DATA.nodes[id] && (DATA.nodes[id].file.match(/([A-Za-z]+)\.java/) || [])[1]) || ({ autotrace: 'autotrace CLI', presetfile: 'Preset file', outdir: 'Output folder' }[id] || id);
 const DIAG_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1.5" y="2" width="5" height="4" rx="1"/><rect x="9.5" y="10" width="5" height="4" rx="1"/><path d="M4 6v3.5a1 1 0 0 0 1 1h4.5"/></svg>';
@@ -282,8 +319,39 @@ function segHTML(s, i) {
     <div class="rows">${rows.map(r => `<div class="row">
       <div class="do">${r.who ? `<span class="badge ${r.who} who-tag">${label(r.who)}</span>` : ''}<span class="lbl">DO</span>${md(r.do)}</div>
       <div class="say"><span class="lbl">SAY</span>${md(r.say)}</div></div>`).join('')}</div>
+    ${segFiles(s.n)}
     ${s.nodes.length ? `<div class="seg-foot">Files in this part: ${nodeChips(s.nodes)}</div>` : ''}
   </article>`;
+}
+
+/* ---------------- demo files ---------------- */
+const ICON = { zip: '🗜️', folder: '📁', created: '💾', file: '📄' };
+function fileCard(f, again) {
+  const kind = f.kind === 'image' ? 'Image' : f.kind === 'zip' ? 'ZIP' : f.kind === 'folder' ? 'Folder' : f.kind === 'created' ? 'Made during the demo' : /\.jpe?g$/i.test(f.name) ? 'Fake JPG (text)' : 'Other file';
+  const thumb = f.kind === 'image'
+    ? `<div class="thumb${f.alpha ? ' checker' : ''}"><img loading="lazy" src="${esc(f.path)}" alt="${esc(f.name)}"></div>`
+    : `<div class="thumb">${ICON[f.kind] || ICON.file}</div>`;
+  const body = `<div class="fbody"><span class="tag">${kind}${again ? ' · from step ' + f.seg : ''}</span><span class="fname">${esc(f.name)}</span>
+    ${again ? '' : `<span>${md(f.note)}</span>`}${f.members && !again ? `<ul>${f.members.map(m => `<li>${esc(m)}</li>`).join('')}</ul>` : ''}</div>`;
+  const cls = `fcard ${f.who}${again ? ' again' : ''}`;
+  return f.kind === 'folder' || f.kind === 'created'
+    ? `<div class="${cls}">${thumb}${body}</div>`
+    : `<a class="${cls}" href="${esc(f.path)}" target="_blank" rel="noopener" title="Open ${esc(f.name)}">${thumb}${body}</a>`;
+}
+function filesFor(n) {
+  const own = FILES.filter(f => f.seg === n);
+  const again = ((DATA.fileReuse || {})[n] || []).map(name => FILE_BY_NAME[name]).filter(Boolean);
+  return own.map(f => fileCard(f, false)).concat(again.map(f => fileCard(f, true)));
+}
+function segFiles(n) {
+  const cards = filesFor(n);
+  return cards.length ? `<div class="seg-files"><span class="lbl">FILES FOR THIS STEP</span><div class="fgrid">${cards.join('')}</div></div>` : '';
+}
+function renderFiles() {
+  let html = SEGS.filter(s => filesFor(s.n).length).map(s => `<div class="fsec"><span class="t">${s.time.split(' – ')[0]}</span><span class="badge ${s.who}">${label(s.who)}</span><h3>${s.n}. ${md(s.title)}</h3></div><div class="fgrid">${filesFor(s.n).join('')}</div>`).join('');
+  const qa = FILES.filter(f => f.seg === 99);
+  if (qa.length) html += `<div class="fsec"><span class="badge both">Q&amp;A</span><h3>Backup files, only if the lecturers ask</h3></div><p class="lead" style="margin-top:0">Drop the ZIPs on the drop screen (after New Batch) so the message is visible.</p><div class="fgrid">${qa.map(f => fileCard(f, false)).join('')}</div>`;
+  $('#fileList').innerHTML = html || '<p class="empty">No demo-files folder found next to this page.</p>';
 }
 
 function renderSegments() {
@@ -471,6 +539,8 @@ let toastT;
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 1600); }
 
 document.addEventListener('click', e => {
+  const tl = e.target.closest('[data-tab-link]');
+  if (tl) { e.preventDefault(); setTab(tl.dataset.tabLink); return; }
   const n = e.target.closest('[data-node]');
   if (n) { openDiagram('focus=' + n.dataset.node, NAME(n.dataset.node)); return; }
   const r = e.target.closest('[data-route]');
@@ -499,13 +569,14 @@ document.addEventListener('keydown', e => {
   else if (k === 'arrowleft' || k === 'k') { e.preventDefault(); setTab('demo'); step(-1); }
   else if (k === 'f') setFocus(!document.body.classList.contains('focus'));
   else if (k === 's') play(); else if (k === 'r') reset();
-  else if ('1234'.includes(k)) setTab(['demo', 'qa', 'rubric', 'map'][+k - 1]);
+  else if ('12345'.includes(k)) setTab(['demo', 'qa', 'rubric', 'map', 'files'][+k - 1]);
 });
 
 /* ---------------- init ---------------- */
 setWho(who);
 renderRubric();
-setTab(store.get('tab', 'demo'));
+renderFiles();
+setTab(location.hash === '#files' ? 'files' : store.get('tab', 'demo'));
 if (store.get('focus', false)) setFocus(true);
 const startIdx = SEGS.findIndex(s => elapsed < s.end);
 current = startIdx < 0 ? SEGS.length - 1 : startIdx;
