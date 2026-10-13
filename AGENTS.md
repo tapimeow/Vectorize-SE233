@@ -1,4 +1,4 @@
-# Student project guidance — raster-to-vector JavaFX app
+# Student project guidance - raster-to-vector JavaFX app
 
 ## Purpose and source hierarchy
 
@@ -10,7 +10,7 @@ The sibling `../complete-reference/` is a **protected, fully implemented preserv
 
 - Import direct JPG/PNG or one ZIP safely; preserve good images when one fails.
 - Center original and current SVG side by side; top **only** Zoom In/Out/Fit; right Detail, Colors, Remove Background, Back/Next, Export All. Exclude Edit Result and Hand-pick Settings.
-- Low/Medium/High change actual output. Unlimited avoids a 2–5 palette cap; detected Custom defaults to 2 and maxes at 5. Remove Background yields transparent SVG.
+- Low/Medium/High change actual output. Unlimited avoids a 2-5 palette cap; detected Custom defaults to 2 and maxes at 5. Remove Background yields transparent SVG.
 - Multi-drop prepares Medium/Custom/2 color analysis and previews concurrently with responsive, visible feedback. Centralize `imageCount > 1 && MEDIUM && CUSTOM` in `ProcessingPolicy`; apply it to graded export too.
 - Export All uses the OS folder chooser, off-FX final work, partial-failure reporting and normally openable standalone vector SVG. Never embed or rename raster data.
 - One significant extra feature must be justified to lecturers; named presets are only a candidate.
@@ -19,19 +19,19 @@ The sibling `../complete-reference/` is a **protected, fully implemented preserv
 
 Keep the compact layered packages already scaffolded: domain/session, JavaFX view/controller, import/preprocessing/vectorization/export services, `VectorEngine` adapter, coordinator/policy, typed error. Interfaces are justified only by a replaceable boundary; avoid factories, DI frameworks and enterprise patterns. Controllers translate gestures; they do not perform ZIP, analysis, tracing, CLI or batch loops.
 
-JavaFX Application Thread: chooser, controls, scene graph, WebView, result/status handoff. Bounded workers: decode, ZIP, palette, preprocessing, CLI, XML validation, writes. Use immutable settings snapshots, generation checks for stale preview rejection, honest per-image/aggregate stages, isolated failures, cancellation and shutdown. Show actionable user messages, retain technical causes. The Maven starter now targets JDK 21 / JavaFX 21.0.6; `./mvnw -DskipTests package` is the skeleton compile check. Full tests intentionally fail until TODOs are implemented. Do not install or bundle an external engine without verifying behavior and license.
+JavaFX Application Thread: chooser, controls, scene graph, WebView, result/status handoff. Bounded workers: decode, ZIP, palette, preprocessing, CLI, XML validation, writes. Use immutable settings snapshots, generation checks for stale preview rejection, honest per-image/aggregate stages, isolated failures, cancellation and shutdown. Show actionable user messages, retain technical causes. The Maven starter now targets JDK 26 / JavaFX 26; `./mvnw -DskipTests package` is the skeleton compile check. Full tests intentionally fail until TODOs are implemented. Do not install or bundle an external engine without verifying behavior and license.
 
 ## Phases and authorization
 
-1. Requirements/architecture — documented.
-2. Foundation/domain/view layout — build scaffold and basic data declarations exist; `VectorizeView`'s drop/editor screen layout (coursebook §1.1–§1.4 Event Driven Development) and detail policy are TODO.
-3. Import/ZIP — TODO.
-4. Color/background/vectorization/SVG gate — TODO.
-5. Editor handlers/navigation/zoom/live preview — behavior TODO, once Phase 2's layout exists.
-6. Graded batch concurrency/progress/cancellation — TODO.
-7. Export All/final SVG writes — TODO.
-8. Automated/manual rubric verification and packaging — existing tests serve as acceptance targets; TODO.
-9. Additional feature/UX — preset service and controls scaffolded; TODO and lecturer approval.
+1. Requirements/architecture - documented.
+2. Foundation/domain/view layout - build scaffold and basic data declarations exist; `VectorizeView`'s drop/editor screen layout (coursebook §1.1-§1.4 Event Driven Development) and detail policy are TODO.
+3. Import/ZIP - TODO.
+4. Color/background/vectorization/SVG gate - TODO.
+5. Editor handlers/navigation/zoom/live preview - behavior TODO, once Phase 2's layout exists.
+6. Graded batch concurrency/progress/cancellation - TODO.
+7. Export All/final SVG writes - TODO.
+8. Automated/manual rubric verification and packaging - existing tests serve as acceptance targets; TODO.
+9. Additional feature/UX - preset service and controls scaffolded; TODO and lecturer approval.
 
 **Current phase:** intentionally incomplete student skeleton. Do not automatically advance phases or implement a later phase merely because this file lists it. The user's next request must authorize scope. Preserve student work and never skeletonize the only working copy.
 
@@ -41,4 +41,4 @@ Trace each change to a requirement ID/rubric row. Test pure policy boundaries, Z
 
 Maintain requirement IDs, decisions, open questions and phase status when behavior changes. Whole-assignment Done means all mandatory rubric paths demonstrated, valid external SVGs, no graded-run UI freeze, graceful recovery and a lecturer-accepted extra feature. Skeleton Done means package/class/method contracts and detailed TODO guidance remain, core algorithms/handlers are absent, the student tree compiles, and the protected reference stays intact. Future Codex sessions must inspect status, read these docs, work only in authorized scope, verify proportionally and stop at the phase boundary.
 
-**Current pair division:** `README.md` §7 "Team split" is the authoritative, per-file ownership table (Mona: Frontend/View; Day: Backend/Logic) — every owned file also carries a `// Team ownership: ...` comment at its top. If a request only makes sense for one teammate's files, don't quietly implement the other's side of the integration seam (`VectorizeController` ↔ services/coordinator) without flagging it.
+**Current pair division:** `README.md` §7 "Team split" is the authoritative, per-file ownership table (Mona: Frontend/View; Day: Backend/Logic) - every owned file also carries a `// Team ownership: ...` comment at its top. If a request only makes sense for one teammate's files, don't quietly implement the other's side of the integration seam (`VectorizeController` ↔ services/coordinator) without flagging it.

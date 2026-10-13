@@ -13,7 +13,7 @@ Status: Student implementation specification; the adjacent `complete-reference/`
 | FR-005 | MUST | The editor top panel contains **only** Zoom In, Zoom Out, Zoom to Fit; these controls work on the preview, and Zoom to Fit fits the available preview area. |
 | FR-006 | MUST | Right panel offers Back/Next to visit loaded images and restores the selected image's settings, original, processing status, and corresponding preview. |
 | FR-007 | MUST | Detail Level offers Low, Medium, High; changing it alters vector output and refreshes the preview. |
-| FR-008 | MUST | Colors offers Unlimited mode, retaining source colors as far as the chosen tracing pipeline can reasonably support. It must not silently behave as fixed 2–5-color Custom mode. |
+| FR-008 | MUST | Colors offers Unlimited mode, retaining source colors as far as the chosen tracing pipeline can reasonably support. It must not silently behave as fixed 2-5-color Custom mode. |
 | FR-009 | MUST | Custom color mode performs automatic color analysis, defaults to 2 colors, and allows at most 5. The chosen count changes vector output. |
 | FR-010 | MUST | Changes to detail, color mode/count, or Remove Background promptly trigger an up-to-date asynchronous preview; an obsolete result must never replace a newer configuration. “Instant” means immediate UI response/refresh scheduling, not zero computation time. |
 | FR-011 | MUST | Remove Background checkbox causes SVG background transparency when enabled; source PNG transparency must be respected in the tracing pipeline. |
@@ -45,7 +45,7 @@ Status: Student implementation specification; the adjacent `complete-reference/`
 
 ## Constraints and exclusions
 
-- C-001: Java desktop/JavaFX application inside the Maven modular IntelliJ scaffold. The student build targets JDK 21 and JavaFX 21.0.6; FXML was starter scaffolding, not a lecturer requirement.
+- C-001: Java desktop/JavaFX application inside the Maven modular IntelliJ scaffold. The student build targets JDK 26 and JavaFX 26; FXML was starter scaffolding, not a lecturer requirement.
 - C-002: Two students; prefer standard Java/JavaFX facilities and one real engine boundary over DI frameworks or many layers of indirection.
 - C-003: The graded predicate is **image count > 1 AND Detail Level == MEDIUM AND Color Mode == CUSTOM**. Centralize it and demonstrate it on multi-drop preprocessing and export.
 - C-004: Custom palette maximum **5**, default **2**. Low/Medium/High and Unlimited/Custom are typed settings, not loosely parsed UI strings.
@@ -58,7 +58,7 @@ Status: Student implementation specification; the adjacent `complete-reference/`
 - A-001: Settings are shared **defaults** at import, then copied per image so navigation restores edits; the assignment does not specify global versus per-image settings. See decision D-02 in `ARCHITECTURE.md`.
 - A-002: Direct image drops and ZIP import yield the same ordered image-document list. The prompt explicitly says “one ZIP” and is silent about a mixed image+ZIP drop.
 - A-003: “Pre-shown” means show each completed preview as soon as it is available (the selected image immediately), while remaining batch jobs progress. A busy indicator is shown before readiness.
-- A-004: Unlimited means no imposed 2–5-color quantization; an engine may still approximate colors because raster-to-vector tracing is inherently lossy. Color fidelity is a test criterion, not a guarantee of every pixel color.
+- A-004: Unlimited means no imposed 2-5-color quantization; an engine may still approximate colors because raster-to-vector tracing is inherently lossy. Color fidelity is a test criterion, not a guarantee of every pixel color.
 - A-005: A failed image remains visible with status/error; Export All writes successes and gives a partial-failure summary rather than aborting the batch. Export retry semantics need lecturer/input confirmation.
 - A-006: “Instant preview” is asynchronous and supersedes stale jobs; actual tracing time may vary by image/tool.
 
@@ -69,7 +69,7 @@ Status: Student implementation specification; the adjacent `complete-reference/`
 | JPG and PNG | Each yields parseable, externally openable SVG with paths/shapes and no embedded raster; originals remain visible. |
 | Multi-drop/ZIP | Correct order/count; supported ZIP entries appear like direct files; empty/corrupt/unsafe ZIP gives clear feedback. |
 | Editor | Side-by-side preview; top has only three zoom actions; Back/Next restore document-specific state. |
-| Settings | Low/Medium/High outputs differ as intended; Unlimited and 2–5-color Custom are distinguishable; detected palette is presented; configuration updates show current result and ignore stale results. |
+| Settings | Low/Medium/High outputs differ as intended; Unlimited and 2-5-color Custom are distinguishable; detected palette is presented; configuration updates show current result and ignore stale results. |
 | Background | With Remove Background, SVG canvas is transparent and meaningful foreground remains; preview can use a checkerboard to prove transparency. |
 | Preprocessing | Drop at least two images: both start Medium/Custom/2, color detection and previews run on bounded workers simultaneously, progress remains visible, UI remains interactive. |
 | Export | OS chooser appears; successful results have unique `.svg` names and open normally; needed jobs run off FX thread and concurrently when predicate holds; progress/partial errors are visible. |
@@ -94,16 +94,16 @@ Status: Student implementation specification; the adjacent `complete-reference/`
 | Openable export | 1 of 2 | FR-015, FR-016, FR-017 | Folder dialog and external SVG open. |
 | Parallel export/feedback | second 1 of 2 | FR-014, FR-016, NFR-001, NFR-002 | Parallel default batch, status and responsive UI. |
 | Additional feature | 1 | FR-019 | Distinct feature demonstrated after mandatory criteria. |
-| Subjective UX/UI | unnumbered | FR-004–FR-006, FR-010, FR-012, NFR-007, NFR-009 | Clear selected image, state, feedback, and recoverable failures. |
+| Subjective UX/UI | unnumbered | FR-004-FR-006, FR-010, FR-012, NFR-007, NFR-009 | Clear selected image, state, feedback, and recoverable failures. |
 
 ## Open questions / ambiguities
 
 1. Is a mixed image+ZIP drop accepted, or must ZIP be the only dropped item? The brief explicitly lists one ZIP but not mixtures.
 2. Should settings apply globally to all images or per image? The design adopts per-image copies of shared defaults; confirm if lecturers expect one global batch configuration.
 3. How should the parallel predicate apply after users create **mixed per-image** configurations? The graded default batch is unambiguous; see D-03 and its conservative rule.
-4. Which target platforms must run the tool? (A prior draft proposed fixed numeric ZIP/decode resource caps; dropped as scope neither the coursebook nor the brief asks for — see D-11 in `ARCHITECTURE.md`. Revisit only if a real crash/hang on the grading machine shows it's needed.)
+4. Which target platforms must run the tool? (A prior draft proposed fixed numeric ZIP/decode resource caps; dropped as scope neither the coursebook nor the brief asks for - see D-11 in `ARCHITECTURE.md`. Revisit only if a real crash/hang on the grading machine shows it's needed.)
 5. What counts as acceptable Unlimited color fidelity, especially for photographs, and what vector visual quality is expected? A tracing engine inevitably approximates the source.
 6. How should background be identified for photographs or multicolored/transparent edges? Is an edge-connected dominant-color heuristic acceptable, or is manual selection expected (the latter risks “Hand-pick Settings”)?
 7. Does “instant” have a numerical response-time threshold, or is immediate asynchronous refresh with progress sufficient?
 8. If an output filename already exists, should Export All replace, skip, or make a unique name? Design recommends unique naming without silent overwrite.
-9. Will named settings presets, if implemented, count as the rubric's “significant” additional feature? Ask the lecturers before relying on that point.
+9. Two additional features are implemented for FR-019: named settings presets (Save/Load) and New Batch (cancel running work, clear the session, return to the drop screen). Confirm with the lecturers which one counts as the rubric's “significant” additional feature.
